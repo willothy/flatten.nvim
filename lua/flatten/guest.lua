@@ -12,13 +12,15 @@ M.init = function()
 		.. vim.inspect(response_pipe) ..
 		")"
 
+	if #args < 1 then return end
+
 	local block = vim.fn.rpcrequest(sock, "nvim_exec_lua", call, {})
-	vim.fn.chanclose(sock)
-	if block == false then
-		vim.cmd('qa!')
+	if not block then
+		vim.cmd("qa!")
 	end
+	vim.fn.chanclose(sock)
 	while block do
-		vim.cmd("sleep 5")
+		vim.cmd("sleep 1")
 	end
 end
 
