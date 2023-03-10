@@ -65,9 +65,7 @@ M.edit_files = function(args, response_pipe)
 	local bufnr = vim.api.nvim_get_current_buf()
 	callbacks.post_open(bufnr, winnr)
 
-	print(ft)
 	local block = config.block_for[ft]
-	print(block)
 	if block then
 		notify_when_done(response_pipe, bufnr)
 		callbacks.block_end()
