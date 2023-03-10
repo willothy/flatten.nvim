@@ -4,9 +4,9 @@ M.config = {
 	callbacks = {
 		pre_open = function()
 		end,
-		post_open = function(bufnr, winnr)
+		post_open = function(bufnr, winnr, filetype)
 		end,
-		block_end = function()
+		block_end = function(filetype)
 		end
 	},
 	block_for = {

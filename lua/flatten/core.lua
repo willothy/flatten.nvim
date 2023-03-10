@@ -30,8 +30,6 @@ M.edit_files = function(args, response_pipe)
 	local config = require("flatten").config
 	local callbacks = config.callbacks
 
-	local termbuf = vim.api.nvim_get_current_buf()
-
 	callbacks.pre_open()
 	if #args > 0 then
 		local argstr = ""
@@ -55,13 +53,13 @@ M.edit_files = function(args, response_pipe)
 
 	local winnr = vim.api.nvim_get_current_win()
 	local bufnr = vim.api.nvim_get_current_buf()
-	callbacks.post_open(bufnr, winnr)
+	callbacks.post_open(bufnr, winnr, ft)
 
 	local response_sock = vim.fn.sockconnect("pipe", response_pipe, { rpc = true })
 	local block = config.block_for[ft]
 	if block then
 		notify_when_done(response_sock, bufnr)
-		callbacks.block_end()
+		callbacks.block_end(ft)
 	else
 		unblock_client(response_sock, nil)
 	end
