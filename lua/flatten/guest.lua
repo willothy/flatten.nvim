@@ -7,16 +7,18 @@ M.init = function()
 	local response_pipe = vim.call("serverstart")
 
 	local call =
-		"require('flatten.core').edit_files("
+		"return require('flatten.core').edit_files("
 		.. vim.inspect(args) .. ','
 		.. vim.inspect(response_pipe) ..
 		")"
 
-	vim.fn.rpcrequest(sock, "nvim_exec_lua", call, {})
-	-- vim.fn.chanclose(sock)
-	while (true)
-	do
-		vim.cmd("sleep 1")
+	local block = vim.fn.rpcrequest(sock, "nvim_exec_lua", call, {})
+	vim.fn.chanclose(sock)
+	if block == false then
+		vim.cmd('qa!')
+	end
+	while block do
+		vim.cmd("sleep 5")
 	end
 end
 
