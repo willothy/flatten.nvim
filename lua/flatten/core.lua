@@ -12,7 +12,7 @@ local function unblock_client(othercmds)
 	end
 end
 
-local function notify_when_done(bufnr)
+local function notify_when_done(bufnr, callback, ft)
 	local quitpre
 	local bufunload
 	local bufdelete
@@ -21,6 +21,7 @@ local function notify_when_done(bufnr)
 		once = true,
 		callback = function()
 			unblock_client({ bufunload, bufdelete })
+			callback(ft)
 		end
 	})
 	bufunload = vim.api.nvim_create_autocmd("BufUnload", {
@@ -28,6 +29,7 @@ local function notify_when_done(bufnr)
 		once = true,
 		callback = function()
 			unblock_client({ quitpre, bufdelete })
+			callback(ft)
 		end
 	})
 	bufdelete = vim.api.nvim_create_autocmd("BufDelete", {
@@ -35,6 +37,7 @@ local function notify_when_done(bufnr)
 		once = true,
 		callback = function()
 			unblock_client({ quitpre, bufunload })
+			callback(ft)
 		end
 	})
 end
@@ -71,8 +74,7 @@ M.edit_files = function(args, response_pipe)
 	M.response_sock = vim.fn.sockconnect("pipe", response_pipe, { rpc = true })
 	local block = config.block_for[ft]
 	if block then
-		notify_when_done(bufnr)
-		callbacks.block_end(ft)
+		notify_when_done(bufnr, callbacks.block_end, ft)
 	else
 		unblock_client({})
 	end
