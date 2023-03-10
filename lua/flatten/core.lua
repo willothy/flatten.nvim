@@ -1,29 +1,40 @@
 local M = {}
 
-local function unblock_client(sock, othercmds)
-	vim.fn.rpcnotify(sock, "nvim_exec_lua", "vim.cmd('qa!')", {})
-	vim.fn.chanclose(sock)
+M.response_sock = nil
 
-	for _, cmd in othercmds do
+local function unblock_client(othercmds)
+	vim.fn.rpcnotify(M.response_sock, "nvim_exec_lua", "vim.cmd('qa!')", {})
+	vim.fn.chanclose(M.response_sock)
+	M.response_sock = nil
+
+	for _, cmd in ipairs(othercmds) do
 		vim.api.nvim_del_autocmd(cmd)
 	end
 end
 
-local function notify_when_done(sock, bufnr)
+local function notify_when_done(bufnr)
 	local quitpre
 	local bufunload
+	local bufdelete
 	quitpre = vim.api.nvim_create_autocmd("QuitPre", {
 		buffer = bufnr,
 		once = true,
 		callback = function()
-			unblock_client(sock, { bufunload })
+			unblock_client({ bufunload, bufdelete })
 		end
 	})
 	bufunload = vim.api.nvim_create_autocmd("BufUnload", {
 		buffer = bufnr,
 		once = true,
 		callback = function()
-			unblock_client(sock, { quitpre })
+			unblock_client({ quitpre, bufdelete })
+		end
+	})
+	bufdelete = vim.api.nvim_create_autocmd("BufDelete", {
+		buffer = bufnr,
+		once = true,
+		callback = function()
+			unblock_client({ quitpre, bufunload })
 		end
 	})
 end
@@ -57,13 +68,13 @@ M.edit_files = function(args, response_pipe)
 	local bufnr = vim.api.nvim_get_current_buf()
 	callbacks.post_open(bufnr, winnr, ft)
 
-	local response_sock = vim.fn.sockconnect("pipe", response_pipe, { rpc = true })
+	M.response_sock = vim.fn.sockconnect("pipe", response_pipe, { rpc = true })
 	local block = config.block_for[ft]
 	if block then
-		notify_when_done(response_sock, bufnr)
+		notify_when_done(bufnr)
 		callbacks.block_end(ft)
 	else
-		unblock_client(response_sock, nil)
+		unblock_client({})
 	end
 end
 
