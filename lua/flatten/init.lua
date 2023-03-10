@@ -8,6 +8,9 @@ M.config = {
 		end,
 		block_end = function()
 		end
+	},
+	block_for = {
+		["gitcommit"] = true,
 	}
 }
 
@@ -24,7 +27,7 @@ local function flatten_init()
 end
 
 M.setup = function(opt)
-	M.config = vim.tbl_deep_extend("force", M.config, opt)
+	M.config = vim.tbl_deep_extend("keep", opt, M.config)
 
 	flatten_init()
 end

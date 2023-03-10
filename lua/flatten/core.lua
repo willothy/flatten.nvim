@@ -1,16 +1,19 @@
 local M = {}
 
 local function unblock_client(sock, othercmd1, othercmd2)
+	local sock = vim.fn.sockconnect("pipe", sock, { rpc = true })
 	vim.fn.rpcnotify(sock, "nvim_exec_lua", "vim.cmd('qa!')", {})
 	vim.fn.chanclose(sock)
 
-	vim.api.nvim_del_autocmd(othercmd1)
-	vim.api.nvim_del_autocmd(othercmd2)
+	if othercmd1 ~= nil then
+		vim.api.nvim_del_autocmd(othercmd1)
+	end
+	if othercmd2 ~= nil then
+		vim.api.nvim_del_autocmd(othercmd2)
+	end
 end
 
-local function notify_when_done(pipe, bufnr)
-	local sock = vim.sockconnect("pipe", pipe, { rpc = true })
-
+local function notify_when_done(sock, bufnr)
 	local quitpre
 	local bufunload
 	local bufdelete
@@ -35,7 +38,8 @@ local function notify_when_done(pipe, bufnr)
 end
 
 M.edit_files = function(args, response_pipe)
-	local callbacks = require("flatten").config.callbacks
+	local config = require("flatten").config
+	local callbacks = config.callbacks
 	callbacks.pre_open()
 	if #args > 0 then
 		local argstr = ""
@@ -55,14 +59,20 @@ M.edit_files = function(args, response_pipe)
 	else
 		vim.cmd("tabnew")
 	end
+	local ft = vim.bo.filetype
 
 	local winnr = vim.api.nvim_get_current_win()
 	local bufnr = vim.api.nvim_get_current_buf()
 	callbacks.post_open(bufnr, winnr)
 
-	if response_pipe ~= nil then
+	print(ft)
+	local block = config.block_for[ft]
+	print(block)
+	if block then
 		notify_when_done(response_pipe, bufnr)
 		callbacks.block_end()
+	else
+		unblock_client(response_pipe, nil, nil)
 	end
 end
 
