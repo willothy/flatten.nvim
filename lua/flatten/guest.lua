@@ -11,13 +11,13 @@ M.init = function()
 		.. vim.inspect(args) .. ','
 		.. vim.inspect(response_pipe) ..
 		")"
-	-- vim.fn.rpcnotify(sock, "nvim_exec_lua", call, {})
 
 	vim.fn.rpcrequest(sock, "nvim_exec_lua", call, {})
-	-- while true do
-	-- 	-- sleep for 1000ms
-	-- 	vim.fn.sleep(1000)
-	-- end
+	vim.fn.chanclose(sock)
+	while (true)
+	do
+		vim.cmd("sleep 10")
+	end
 end
 
 return M
