@@ -1,10 +1,12 @@
 local M = {}
 
-local function unblock_client(sock, othercmd)
+local function unblock_client(sock, othercmds)
 	vim.fn.rpcnotify(sock, "nvim_exec_lua", "vim.cmd('qa!')", {})
 	vim.fn.chanclose(sock)
 
-	vim.api.nvim_del_autocmd(othercmd)
+	for _, cmd in othercmds do
+		vim.api.nvim_del_autocmd(cmd)
+	end
 end
 
 local function notify_when_done(sock, bufnr)
@@ -14,14 +16,14 @@ local function notify_when_done(sock, bufnr)
 		buffer = bufnr,
 		once = true,
 		callback = function()
-			unblock_client(sock, bufunload)
+			unblock_client(sock, { bufunload })
 		end
 	})
 	bufunload = vim.api.nvim_create_autocmd("BufUnload", {
 		buffer = bufnr,
 		once = true,
 		callback = function()
-			unblock_client(sock, quitpre)
+			unblock_client(sock, { quitpre })
 		end
 	})
 end
