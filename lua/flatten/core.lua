@@ -44,7 +44,7 @@ local function notify_when_done(pipe, bufnr, callback, ft)
 	})
 end
 
-M.edit_files = function(args, response_pipe)
+M.edit_files = function(args, response_pipe, guest_cwd)
 	local config = require("flatten").config
 	local callbacks = config.callbacks
 
@@ -52,7 +52,7 @@ M.edit_files = function(args, response_pipe)
 	if #args > 0 then
 		local argstr = ""
 		for _, arg in pairs(args) do
-			local p = vim.loop.fs_realpath(arg) or arg
+			local p = vim.loop.fs_realpath(arg) or guest_cwd .. '/' .. arg
 			if argstr == "" or argstr == nil then
 				argstr = p
 			else

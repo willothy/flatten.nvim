@@ -9,7 +9,8 @@ M.init = function()
 	local call =
 		"return require('flatten.core').edit_files("
 		.. vim.inspect(args) .. ','
-		.. vim.inspect(response_pipe) ..
+		.. vim.inspect(response_pipe) .. ','
+		.. "'" .. vim.fn.getcwd() .. "'" ..
 		")"
 
 	if #args < 1 then return end
