@@ -13,10 +13,10 @@ M.init = function()
 		")"
 
 	vim.fn.rpcrequest(sock, "nvim_exec_lua", call, {})
-	vim.fn.chanclose(sock)
+	-- vim.fn.chanclose(sock)
 	while (true)
 	do
-		vim.cmd("sleep 10")
+		vim.cmd("sleep 1")
 	end
 end
 
