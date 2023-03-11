@@ -14,15 +14,10 @@ M.config = {
 	}
 }
 
-M.pipe_var = "NVIM_FLATTEN_PIPE_PATH"
-M.pipe_path = nil
-
 local function flatten_init()
-	M.pipe_path = os.getenv(M.pipe_var)
-	if M.pipe_path ~= nil then
-		require('flatten.guest').init()
-	else
-		require('flatten.host').init()
+	local pipe_path = os.getenv("NVIM")
+	if pipe_path ~= nil then
+		require('flatten.guest').init(pipe_path)
 	end
 end
 

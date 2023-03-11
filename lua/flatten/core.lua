@@ -1,12 +1,9 @@
 local M = {}
 
-M.response_sock = nil
-
-local function unblock_client(pipe, othercmds)
-	M.response_sock = vim.fn.sockconnect("pipe", pipe, { rpc = true })
-	vim.fn.rpcnotify(M.response_sock, "nvim_exec_lua", "vim.cmd('qa!')", {})
-	vim.fn.chanclose(M.response_sock)
-	M.response_sock = nil
+local function unblock_guest(guest_pipe, othercmds)
+	local response_sock = vim.fn.sockconnect("pipe", guest_pipe, { rpc = true })
+	vim.fn.rpcnotify(response_sock, "nvim_exec_lua", "vim.cmd('qa!')", {})
+	vim.fn.chanclose(response_sock)
 
 	for _, cmd in ipairs(othercmds) do
 		vim.api.nvim_del_autocmd(cmd)
@@ -22,7 +19,7 @@ local function notify_when_done(pipe, bufnr, callback, ft)
 		buffer = bufnr,
 		once = true,
 		callback = function()
-			unblock_client(pipe, { bufunload, bufdelete })
+			unblock_guest(pipe, { bufunload, bufdelete })
 			callback(ft)
 		end
 	})
@@ -30,7 +27,7 @@ local function notify_when_done(pipe, bufnr, callback, ft)
 		buffer = bufnr,
 		once = true,
 		callback = function()
-			unblock_client(pipe, { quitpre, bufdelete })
+			unblock_guest(pipe, { quitpre, bufdelete })
 			callback(ft)
 		end
 	})
@@ -38,7 +35,7 @@ local function notify_when_done(pipe, bufnr, callback, ft)
 		buffer = bufnr,
 		once = true,
 		callback = function()
-			unblock_client(pipe, { quitpre, bufunload })
+			unblock_guest(pipe, { quitpre, bufunload })
 			callback(ft)
 		end
 	})
