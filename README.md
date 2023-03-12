@@ -4,7 +4,7 @@ Flatten allows you to open files from a neovim terminal buffer in your current n
 
 The name is inspired by the flatten function in Rust (and maybe other languages?), which flattens nested types (`Option<Option<T>>` -> `Option<T>`, etc).
 
-The plugin itself is heavily inspired by `nvim-unception`, which I think is great but found somewhat frustrating to work with and configure. Flatten uses modules and doesn't add any globals, which I think makes the codebase more convenient to work with and by extension less bug-prone. It also offers lua configuration.
+The plugin itself is inspired by [`nvim-unception`](https://github.com/samjwill/nvim-unception), which accomplishes the same goal but functions a bit differently and doesn't allow as much configuration. Flatten uses modules and doesn't add any globals, which I think makes the codebase more convenient to work with and by extension less bug-prone. It also offers lua configuration.
 
 ## Demo
 
