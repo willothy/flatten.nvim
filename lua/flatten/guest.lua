@@ -1,12 +1,12 @@
 local M = {}
 
 M.init = function(host_pipe)
-	local args = vim.call("argv")
+	local args = vim.fn.argv()
 
 	local host = vim.fn.sockconnect("pipe", host_pipe, { rpc = true })
 
 	local call =
-		"return require('flatten.core').edit_files("
+	"return require('flatten.core').edit_files("
 		.. vim.inspect(args) .. ','
 		.. "'" .. vim.v.servername .. "',"
 		.. "'" .. vim.fn.getcwd() .. "'" ..
