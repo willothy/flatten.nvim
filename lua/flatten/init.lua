@@ -10,7 +10,11 @@ M.config = {
 		end
 	},
 	block_for = {
-		["gitcommit"] = true,
+		gitcommit = true,
+	},
+	window = {
+		open = "tab",
+		focus = "first"
 	}
 }
 
