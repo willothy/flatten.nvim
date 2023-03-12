@@ -41,14 +41,25 @@ local function notify_when_done(pipe, bufnr, callback, ft)
 	})
 end
 
-M.edit_files = function(args, response_pipe, guest_cwd)
+M.edit_files = function(args, response_pipe, guest_cwd, stdin)
 	local config = require("flatten").config
 	local callbacks = config.callbacks
 	local focus_first = config.window.focus == "first"
 	local open = config.window.open
 
+	local nargs = #args
+	local stdin_lines = #stdin
+
+	if nargs == 0 and stdin_lines == 0 then
+		-- If there are no new bufs, don't open anything
+		-- and tell the guest not to block
+		return false
+	end
+
 	callbacks.pre_open()
-	if #args > 0 then
+
+	-- Open files
+	if nargs > 0 then
 		local argstr = ""
 		for _, arg in ipairs(args) do
 			local p = vim.loop.fs_realpath(arg) or guest_cwd .. '/' .. arg
@@ -60,37 +71,67 @@ M.edit_files = function(args, response_pipe, guest_cwd)
 		end
 
 		vim.cmd("0argadd " .. argstr)
+	end
 
-		if type(open) == "function" then
-			-- Pass list of new buffer IDs
-			local bufs = vim.api.nvim_list_bufs()
-			local start = #bufs - #args
-			local newbufs = {}
-			for i, buf in ipairs(bufs) do
-				if i > start then
-					table.insert(newbufs, buf)
-				end
+	-- Create buffer for stdin pipe input
+	local stdin_buf = nil
+	if stdin_lines > 0 then
+		-- Create buffer for stdin
+		stdin_buf = vim.api.nvim_create_buf(true, false)
+		-- Add text to buffer
+		vim.api.nvim_buf_set_lines(stdin_buf, 0, 0, true, stdin)
+		-- Set buffer name based on the first line of stdin
+		local name = stdin[1]:sub(1, 12):gsub("[^%w%.]", "")
+		-- Ensure the name isn't empty or a duplicate
+		if vim.fn.bufname(name) ~= "" or name == "" then
+			local i = 1
+			local newname = name .. i
+			while vim.fn.bufname(newname) ~= "" do
+				i = i + 1
+				newname = name .. i
 			end
-			open(newbufs)
-		elseif type(open) == "string" then
-			local focus = vim.fn.argv(focus_first and 0 or (#args - 1))
-			if open == "current" then
-				vim.cmd("edit " .. focus)
-			elseif open == "split" then
-				vim.cmd("split " .. focus)
-			elseif open == "vsplit" then
-				vim.cmd("vsplit " .. focus)
-			else
-				vim.cmd("tabedit " .. focus)
+			name = newname
+		end
+		vim.api.nvim_buf_set_name(stdin_buf, name)
+	end
+
+	-- Open window
+	if type(open) == "function" then
+		-- Pass list of new buffer IDs
+		local bufs = vim.api.nvim_list_bufs()
+		local start = #bufs - #args
+		-- Add buffer for stdin
+		local newbufs = {}
+		-- If there's an stdin buf, push it to the table
+		if stdin_buf then
+			start = start - 1
+			table.insert(newbufs, stdin_buf)
+		end
+		for i, buf in ipairs(bufs) do
+			if i > start then
+				table.insert(newbufs, buf)
 			end
+		end
+		open(newbufs)
+	elseif type(open) == "string" then
+		local focus = vim.fn.argv(focus_first and 0 or (#args - 1))
+		-- If there's an stdin buf, focus that
+		if stdin_buf then
+			focus = vim.api.nvim_buf_get_name(stdin_buf)
+		end
+		if open == "current" then
+			vim.cmd("edit " .. focus)
+		elseif open == "split" then
+			vim.cmd("split " .. focus)
+		elseif open == "vsplit" then
+			vim.cmd("vsplit " .. focus)
 		else
-			vim.api.nvim_err_writeln("Flatten: 'config.open.focus' expects a function or string, got " .. type(open))
+			vim.cmd("tabedit " .. focus)
 		end
 	else
-		-- If there weren't any args, don't open anything
-		-- and tell the guest not to block
-		return false
+		vim.api.nvim_err_writeln("Flatten: 'config.open.focus' expects a function or string, got " .. type(open))
 	end
+
 	local ft = vim.bo.filetype
 
 	local winnr = vim.api.nvim_get_current_win()
@@ -100,6 +141,9 @@ M.edit_files = function(args, response_pipe, guest_cwd)
 	local block = config.block_for[ft] == true
 	if block then
 		notify_when_done(response_pipe, bufnr, callbacks.block_end, ft)
+		-- else
+		-- 	local response_sock = vim.fn.sockconnect("pipe", response_pipe, { rpc = true })
+		-- 	vim.fn.rpcnotify(response_sock, "nvim_exec_lua", "vim.cmd('qa!')")
 	end
 	return block
 end
