@@ -44,11 +44,13 @@ end
 M.edit_files = function(args, response_pipe, guest_cwd)
 	local config = require("flatten").config
 	local callbacks = config.callbacks
+	local focus_first = config.window.focus == "first"
+	local open = config.window.open
 
 	callbacks.pre_open()
 	if #args > 0 then
 		local argstr = ""
-		for _, arg in pairs(args) do
+		for _, arg in ipairs(args) do
 			local p = vim.loop.fs_realpath(arg) or guest_cwd .. '/' .. arg
 			if argstr == "" or argstr == nil then
 				argstr = p
@@ -56,13 +58,38 @@ M.edit_files = function(args, response_pipe, guest_cwd)
 				argstr = argstr .. " " .. p
 			end
 		end
+
 		vim.cmd("0argadd " .. argstr)
 
-		vim.cmd("tab argument 1")
-
-		vim.cmd("edit")
+		if type(open) == "function" then
+			-- Pass list of new buffer IDs
+			local bufs = vim.api.nvim_list_bufs()
+			local start = #bufs - #args
+			local newbufs = {}
+			for i, buf in ipairs(bufs) do
+				if i > start then
+					table.insert(newbufs, buf)
+				end
+			end
+			open(newbufs)
+		elseif type(open) == "string" then
+			local focus = vim.fn.argv(focus_first and 0 or (#args - 1))
+			if open == "current" then
+				vim.cmd("edit " .. focus)
+			elseif open == "split" then
+				vim.cmd("split " .. focus)
+			elseif open == "vsplit" then
+				vim.cmd("vsplit " .. focus)
+			else
+				vim.cmd("tab " .. focus)
+			end
+		else
+			vim.api.nvim_err_writeln("Flatten: 'config.open.focus' expects a function or string, got " .. type(open))
+		end
 	else
-		vim.cmd("tabnew")
+		-- If there weren't any args, don't open anything
+		-- and tell the guest not to block
+		return false
 	end
 	local ft = vim.bo.filetype
 

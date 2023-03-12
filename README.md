@@ -50,6 +50,21 @@ Flatten comes with the following defaults:
     -- <String, Bool> dictionary of filetypes that should be blocking
     block_for = {
         gitcommit = true
+    },
+    -- Window options
+    window = {
+		-- Options:
+		-- tab          -> opens in new tab (default)
+		-- split        -> opens in split
+		-- vsplit       -> opens in vsplit
+		-- current      -> opens in current window
+		-- func(new_bufs)  -> flatten will only open the files, allowing you to handle window opening yourself. Argument is an array of new buffer numbers.
+		open = "tab",
+		-- Affects which file gets focused when opening multiple at once
+		-- Options:
+		-- "first"      -> opens first file of new files (default)
+		-- "last"       -> opens last file of new files
+		focus = "first"
     }
 }
 ```
