@@ -5,12 +5,16 @@ M.init = function(host_pipe)
 
 	local host = vim.fn.sockconnect("pipe", host_pipe, { rpc = true })
 
-	local call =
-	"return require('flatten.core').edit_files("
-		.. vim.inspect(args) .. ','
-		.. "'" .. vim.v.servername .. "',"
-		.. "'" .. vim.fn.getcwd() .. "'" ..
-		")"
+	local call = string.format([[
+		return require('flatten.core').edit_files(
+			%s,   -- `args` passed into nested instance.
+			'%s', -- guest default socket.
+			'%s'  -- guest global cwd.
+		)]],
+		vim.inspect(args),
+		vim.v.servername,
+		vim.fn.getcwd()
+	)
 
 	if #args < 1 then return end
 
