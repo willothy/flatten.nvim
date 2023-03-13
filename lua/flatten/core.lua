@@ -81,7 +81,7 @@ M.edit_files = function(args, response_pipe, guest_cwd)
 			elseif open == "vsplit" then
 				vim.cmd("vsplit " .. focus)
 			else
-				vim.cmd("tab " .. focus)
+				vim.cmd("tabedit " .. focus)
 			end
 		else
 			vim.api.nvim_err_writeln("Flatten: 'config.open.focus' expects a function or string, got " .. type(open))
