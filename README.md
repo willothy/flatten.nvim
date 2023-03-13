@@ -23,11 +23,27 @@ With `lazy.nvim`:
     config = true
     -- or pass configuration with
     -- opts = {  }
+    -- Ensure that it runs first to minimize delay when opening file from terminal
+    lazy = false, priority = 1001,
 }
 
 ```
 
 [^1]: Lazy loading this plugin is not recommended - flatten should always be loaded as early as possible. Starting the host is essentially overhead-free other than the setup() function as it leverages the RPC server started on init by Neovim, and loading plugins before this in a guest session will only result in poor performance. 
+
+To avoid loading plugins in guest sessions you can use the following in your config:
+```lua
+-- If opening from inside neovim terminal then do not load all the other plugins
+if os.getenv("NVIM") ~= nil then
+    require('lazy').setup {
+        {'willothy/flatten.nvim', config = true },
+    }
+    return
+end
+
+-- Otherwise proceed as normal
+require('lazy').setup( --[[ your normal config ]] )
+```
 
 ## Configuration
 
