@@ -13,7 +13,7 @@ M.config = {
 		gitcommit = true,
 	},
 	window = {
-		open = "tab",
+		open = "current",
 		focus = "first"
 	}
 }
