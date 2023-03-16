@@ -4,7 +4,17 @@ Flatten allows you to open files from a neovim terminal buffer in your current n
 
 The name is inspired by the flatten function in Rust (and maybe other languages?), which flattens nested types (`Option<Option<T>>` -> `Option<T>`, etc).
 
-The plugin itself is inspired by [`nvim-unception`](https://github.com/samjwill/nvim-unception), which accomplishes the same goal but functions a bit differently and doesn't allow as much configuration. Flatten uses modules and doesn't add any globals, which I think makes the codebase more convenient to work with and by extension less bug-prone. It also offers lua configuration.
+The plugin itself is inspired by [`nvim-unception`](https://github.com/samjwill/nvim-unception), which accomplishes the same goal but functions a bit differently and doesn't allow as much configuration. Flatten uses modules and doesn't add any globals, which I think makes the codebase more convenient to work with and by extension less bug-prone.
+
+## Features
+
+- [X] Open files from terminal buffers without creating a nested session
+- [X] Allow blocking for git commits
+- [X] Configuration
+    - [X] Callbacks for user-specific workflows
+    - [X] Open in vsplit, split, tab, or current window
+- [X] Setting to [force blocking](#usage) from the commandline, regardless of filetype
+- [ ] Pipe from terminal into a new Neovim buffer (coming soon)
 
 ## Demo
 
@@ -45,6 +55,21 @@ end
 require('lazy').setup( --[[ your normal config ]] )
 ```
 
+## Usage
+
+```sh
+# force blocking from the commandline
+nvim --cmd 'let g:flatten_wait=1' file1
+
+# set VISUAL to block, for use with edit-exec
+VISUAL="nvim --cmd 'let g:flatten_wait=1'"
+
+# otherwise, just open files as normal,
+# and they'll open in your current instance.
+nvim file1 file2
+
+```
+
 ## Configuration
 
 ### Defaults
@@ -58,7 +83,7 @@ Flatten comes with the following defaults:
         pre_open = function() end,
         -- Called after a file is opened
         -- Passed the buf id, win id, and filetype of the new window
-        post_open = function(bufnr, winnr, filetype) end,
+        post_open = function(bufnr, winnr, filetype, is_blocking) end,
         -- Called when a file is open in blocking mode, after it's done blocking
         -- (after bufdelete, bufunload, or quitpre for the blocking buffer)
         block_end = function() end,
@@ -69,19 +94,19 @@ Flatten comes with the following defaults:
     },
     -- Window options
     window = {
-	-- Options:
-	-- current        -> open in current window (default)
-	-- tab            -> open in new tab
-	-- split          -> open in split
-	-- vsplit         -> open in vsplit
-	-- func(new_bufs) -> only open the files, allowing you to handle window opening yourself. 
-	-- Argument is an array of buffer numbers representing the newly opened files.
-	open = "current",
-	-- Affects which file gets focused when opening multiple at once
-	-- Options:
-	-- "first"        -> open first file of new files (default)
-	-- "last"         -> open last file of new files
-	focus = "first"
+        -- Options:
+        -- current        -> open in current window (default)
+        -- tab            -> open in new tab
+        -- split          -> open in split
+        -- vsplit         -> open in vsplit
+        -- func(new_bufs) -> only open the files, allowing you to handle window opening yourself. 
+        -- Argument is an array of buffer numbers representing the newly opened files.
+        open = "current",
+        -- Affects which file gets focused when opening multiple at once
+        -- Options:
+        -- "first"        -> open first file of new files (default)
+        -- "last"         -> open last file of new files
+        focus = "first"
     }
 }
 ```
@@ -103,7 +128,7 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
                 -- Close toggleterm when an external open request is received
                 require("toggleterm").toggle(0)
             end,
-            post_open = function(bufnr, winnr, ft)
+            post_open = function(bufnr, winnr, ft, is_blocking)
                 if ft == "gitcommit" then
                     -- If the file is a git commit, create one-shot autocmd to delete it on write
                     -- If you just want the toggleable terminal integration, ignore this bit and only use the
@@ -125,7 +150,7 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
                             end
                         }
                     )
-                else
+                elseif not is_blocking
                     -- If it's a normal file, then reopen the terminal, then switch back to the newly opened window
                     -- This gives the appearance of the window opening independently of the terminal
                     require("toggleterm").toggle(0)
