@@ -4,13 +4,26 @@ Flatten allows you to open files from a neovim terminal buffer in your current n
 
 The name is inspired by the flatten function in Rust (and maybe other languages?), which flattens nested types (`Option<Option<T>>` -> `Option<T>`, etc).
 
-The plugin itself is inspired by [`nvim-unception`](https://github.com/samjwill/nvim-unception), which accomplishes the same goal but functions a bit differently and doesn't allow as much configuration. Flatten uses modules and doesn't add any globals, which I think makes the codebase more convenient to work with and by extension less bug-prone. It also offers lua configuration.
+The plugin itself is inspired by [`nvim-unception`](https://github.com/samjwill/nvim-unception), which accomplishes the same goal but functions a bit differently and doesn't allow as much configuration.
+
+## Features
+
+- [X] Open files from terminal buffers without creating a nested session
+- [X] Allow blocking for git commits
+- [X] Configuration
+    - [X] Callbacks for user-specific workflows
+    - [X] Open in vsplit, split, tab, or current window
+- [X] Pipe from terminal into a new Neovim buffer ([demo](https://user-images.githubusercontent.com/38540736/225779817-ed7efea8-9108-4f28-983f-1a889d32826f.mp4))
+- [ ] Setting to force blocking from the commandline, regardless of filetype (coming soon)
 
 ## Demo
 
+
 https://user-images.githubusercontent.com/38540736/224443095-91450818-f298-4e08-a951-ee3fcc607330.mp4
 
+
 Config for demo [here](#advanced-configuration) (autodelete gitcommit on write and toggling terminal are not defaults)
+
 
 ## Installation[^1]
 
