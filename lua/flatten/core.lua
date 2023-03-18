@@ -61,15 +61,15 @@ M.edit_files = function(args, response_pipe, guest_cwd, stdin)
 	-- Open files
 	if nargs > 0 then
 		local argstr = ""
-		for _, arg in ipairs(args) do
-			local p = vim.loop.fs_realpath(arg) or guest_cwd .. '/' .. arg
+		for i, arg in ipairs(args) do
+			local p = vim.fn.fnameescape(vim.loop.fs_realpath(arg) or (guest_cwd .. '/' .. arg))
+			args[i] = p
 			if argstr == "" or argstr == nil then
 				argstr = p
 			else
 				argstr = argstr .. " " .. p
 			end
 		end
-
 		vim.cmd("0argadd " .. argstr)
 	end
 
