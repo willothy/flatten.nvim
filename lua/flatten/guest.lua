@@ -1,7 +1,18 @@
 local M = {}
 
+local function is_windows()
+	return package.config:sub(1, 1) == '\\'
+end
+
 local function send_files(host, files, stdin)
 	if #files < 1 and #stdin < 1 then return end
+
+	local server = vim.v.servername
+	local cwd = vim.fn.getcwd()
+	if is_windows() then
+		server = server:gsub('\\', '/')
+		cwd = cwd:gsub('\\', '/')
+	end
 
 	local call = string.format([[
 		return require('flatten.core').edit_files(
@@ -11,8 +22,8 @@ local function send_files(host, files, stdin)
 			%s    -- stdin lines or {}.
 		)]],
 		vim.inspect(files),
-		vim.v.servername,
-		vim.fn.getcwd(),
+		server,
+		cwd,
 		vim.inspect(stdin)
 	)
 
