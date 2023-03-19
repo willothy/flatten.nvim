@@ -2,10 +2,6 @@
 
 Flatten allows you to open files from a neovim terminal buffer in your current neovim instance instead of a nested one in the terminal.
 
-The name is inspired by the flatten function in Rust (and maybe other languages?), which flattens nested types (`Option<Option<T>>` -> `Option<T>`, etc).
-
-The plugin itself is inspired by [`nvim-unception`](https://github.com/samjwill/nvim-unception), which accomplishes the same goal but functions a bit differently and doesn't allow as much configuration.
-
 ## Features
 
 - [X] Open files from terminal buffers without creating a nested session
@@ -14,10 +10,17 @@ The plugin itself is inspired by [`nvim-unception`](https://github.com/samjwill/
     - [X] Callbacks for user-specific workflows
     - [X] Open in vsplit, split, tab, or current window
 - [X] Pipe from terminal into a new Neovim buffer ([demo](https://user-images.githubusercontent.com/38540736/225779817-ed7efea8-9108-4f28-983f-1a889d32826f.mp4))
-- [ ] Setting to force blocking from the commandline, regardless of filetype (coming soon)
+- [X] Setting to force blocking from the commandline, regardless of filetype
+
+## Plans and Ideas
+
+- [ ] Multi-screen support
+    - [ ] Move buffers between Neovim instances in separate windows
+    - [ ] Single cursor between Neovim instances in separate windows
+
+If you have an idea or feature request, open an issue with the `enhancement` tag!
 
 ## Demo
-
 
 https://user-images.githubusercontent.com/38540736/224443095-91450818-f298-4e08-a951-ee3fcc607330.mp4
 
@@ -42,7 +45,6 @@ With `lazy.nvim`:
 
 ```
 
-[^1]: Lazy loading this plugin is not recommended - flatten should always be loaded as early as possible. Starting the host is essentially overhead-free other than the setup() function as it leverages the RPC server started on init by Neovim, and loading plugins before this in a guest session will only result in poor performance. 
 
 To avoid loading plugins in guest sessions you can use the following in your config:
 ```lua
@@ -56,6 +58,21 @@ end
 
 -- Otherwise proceed as normal
 require('lazy').setup( --[[ your normal config ]] )
+```
+
+## Usage
+
+```zsh
+# open files normally
+nvim file1 file2
+
+# force blocking for a file
+nvim --cmd 'let g:flatten_wait=1' file1
+
+# enable blocking for $VISUAL 
+# allows edit-exec
+# in your .bashrc, .zshrc, etc.
+export VISUAL="nvim --cmd 'let g:flatten_wait=1'"
 ```
 
 ## Configuration
@@ -82,19 +99,19 @@ Flatten comes with the following defaults:
     },
     -- Window options
     window = {
-	-- Options:
-	-- current        -> open in current window (default)
-	-- tab            -> open in new tab
-	-- split          -> open in split
-	-- vsplit         -> open in vsplit
-	-- func(new_bufs) -> only open the files, allowing you to handle window opening yourself. 
-	-- Argument is an array of buffer numbers representing the newly opened files.
-	open = "current",
-	-- Affects which file gets focused when opening multiple at once
-	-- Options:
-	-- "first"        -> open first file of new files (default)
-	-- "last"         -> open last file of new files
-	focus = "first"
+        -- Options:
+        -- current        -> open in current window (default)
+        -- tab            -> open in new tab
+        -- split          -> open in split
+        -- vsplit         -> open in vsplit
+        -- func(new_bufs) -> only open the files, allowing you to handle window opening yourself. 
+        -- Argument is an array of buffer numbers representing the newly opened files.
+        open = "current",
+        -- Affects which file gets focused when opening multiple at once
+        -- Options:
+        -- "first"        -> open first file of new files (default)
+        -- "last"         -> open last file of new files
+        focus = "first"
     }
 }
 ```
@@ -116,7 +133,7 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
                 -- Close toggleterm when an external open request is received
                 require("toggleterm").toggle(0)
             end,
-            post_open = function(bufnr, winnr, ft)
+            post_open = function(bufnr, winnr, ft, is_blocking)
                 if ft == "gitcommit" then
                     -- If the file is a git commit, create one-shot autocmd to delete it on write
                     -- If you just want the toggleable terminal integration, ignore this bit and only use the
@@ -138,7 +155,7 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
                             end
                         }
                     )
-                else
+                elseif not is_blocking
                     -- If it's a normal file, then reopen the terminal, then switch back to the newly opened window
                     -- This gives the appearance of the window opening independently of the terminal
                     require("toggleterm").toggle(0)
@@ -154,3 +171,11 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
 }
 
 ```
+
+## About
+
+The name is inspired by the flatten function in Rust (and maybe other languages?), which flattens nested types (`Option<Option<T>>` -> `Option<T>`, etc).
+
+The plugin itself is inspired by [`nvim-unception`](https://github.com/samjwill/nvim-unception), which accomplishes the same goal but functions a bit differently and doesn't allow as much configuration.
+
+[^1]: Lazy loading this plugin is not recommended - flatten should always be loaded as early as possible. Starting the host is essentially overhead-free other than the setup() function as it leverages the RPC server started on init by Neovim, and loading plugins before this in a guest session will only result in poor performance. 
