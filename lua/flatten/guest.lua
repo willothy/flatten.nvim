@@ -11,6 +11,8 @@ end
 local function send_files(host, files, stdin)
 	if #files < 1 and #stdin < 1 then return end
 
+	local force_block = vim.g.flatten_wait ~= nil
+
 	local server = vim.fn.fnameescape(vim.v.servername)
 	local cwd = vim.fn.fnameescape(vim.fn.getcwd( -1, -1))
 	if is_windows() then
@@ -23,18 +25,20 @@ local function send_files(host, files, stdin)
 			%s,   -- `args` passed into nested instance.
 			'%s', -- guest default socket.
 			'%s', -- guest global cwd.
-			%s    -- stdin lines or {}.
+			%s,   -- stdin lines or {}.
+			%s    -- enable blocking
 		)]],
 		vim.inspect(files),
 		server,
 		cwd,
-		vim.inspect(stdin)
+		vim.inspect(stdin),
+		force_block and 'true' or 'false'
 	)
 
 	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
 		vim.api.nvim_buf_delete(buf, { force = true })
 	end
-	local block = vim.fn.rpcrequest(host, "nvim_exec_lua", call, {})
+	local block = vim.fn.rpcrequest(host, "nvim_exec_lua", call, {}) or force_block
 	if not block then
 		vim.cmd('qa!')
 	end

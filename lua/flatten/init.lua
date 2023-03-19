@@ -4,7 +4,7 @@ M.config = {
 	callbacks = {
 		pre_open = function()
 		end,
-		post_open = function(bufnr, winnr, filetype)
+		post_open = function(bufnr, winnr, filetype, is_blocking)
 		end,
 		block_end = function(filetype)
 		end

@@ -41,7 +41,7 @@ local function notify_when_done(pipe, bufnr, callback, ft)
 	})
 end
 
-M.edit_files = function(args, response_pipe, guest_cwd, stdin)
+M.edit_files = function(args, response_pipe, guest_cwd, stdin, force_block)
 	local config = require("flatten").config
 	local callbacks = config.callbacks
 	local focus_first = config.window.focus == "first"
@@ -137,14 +137,12 @@ M.edit_files = function(args, response_pipe, guest_cwd, stdin)
 
 	local winnr = vim.api.nvim_get_current_win()
 	local bufnr = vim.api.nvim_get_current_buf()
-	callbacks.post_open(bufnr, winnr, ft)
 
-	local block = config.block_for[ft] == true
+	local block = config.block_for[ft] or force_block
+	callbacks.post_open(bufnr, winnr, ft, block)
+
 	if block then
 		notify_when_done(response_pipe, bufnr, callbacks.block_end, ft)
-		-- else
-		-- 	local response_sock = vim.fn.sockconnect("pipe", response_pipe, { rpc = true })
-		-- 	vim.fn.rpcnotify(response_sock, "nvim_exec_lua", "vim.cmd('qa!')")
 	end
 	return block
 end
