@@ -31,6 +31,9 @@ local function send_files(host, files, stdin)
 		vim.inspect(stdin)
 	)
 
+	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+		vim.api.nvim_buf_delete(buf, { force = true })
+	end
 	local block = vim.fn.rpcrequest(host, "nvim_exec_lua", call, {})
 	if not block then
 		vim.cmd('qa!')
