@@ -70,7 +70,11 @@ M.edit_files = function(args, response_pipe, guest_cwd, stdin, force_block)
 				argstr = argstr .. " " .. p
 			end
 		end
+		local wildignore = vim.o.wildignore
+		-- Hack to work around https://github.com/vim/vim/issues/4610
+		vim.o.wildignore = ""
 		vim.cmd("0argadd " .. argstr)
+		vim.o.wildignore = wildignore
 	end
 
 	-- Create buffer for stdin pipe input
