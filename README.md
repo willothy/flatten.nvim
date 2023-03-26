@@ -14,6 +14,8 @@ Flatten allows you to open files from a neovim terminal buffer in your current n
 
 ## Plans and Ideas
 
+Ideas:
+
 - [ ] Multi-screen support
   - [ ] Move buffers between Neovim instances in separate windows
   - [ ] Single cursor between Neovim instances in separate windows
@@ -99,6 +101,7 @@ Flatten comes with the following defaults:
     window = {
         -- Options:
         -- current        -> open in current window (default)
+        -- alternate      -> open in alternate window (recommended)
         -- tab            -> open in new tab
         -- split          -> open in split
         -- vsplit         -> open in vsplit
@@ -116,9 +119,11 @@ Flatten comes with the following defaults:
 
 ### Advanced configuration
 
-Similarly to `nvim-unception`, if you use a toggleable terminal and don't want the opened file(s) to be opened in the same window as your terminal buffer, you may want to use the `pre_open` callback to close the terminal. You can even reopen it immediately after the file is opened using the `post_open` callback for a truly seamless experience.
+If you use a toggleable terminal and don't want the new buffer(s) to be opened in your current window, you can use the `alternate` mode instead of `current` to open in your last window. With this method, the terminal doesn't need to be closed and re-opened as it did with the [old example config](https://github.com/willothy/flatten.nvim/blob/c986f98bc1d1e2365dfb2e97dda58ca5d0ae24ae/README.md).
 
-Note that when opening a file in blocking mode, such as a git commit, the terminal will be inaccessible. You can get the filetype from the bufnr or filetype arguments of the `post_open` callback to only reopen the terminal for non-blocking files.
+The only reason 'alternate' isn't the default is to avoid breaking people's configs. It may become the default at some point if that's something that people ask for (e.g., open an issue if you want that, or comment on one if it exists).
+
+Note that when opening a file in blocking mode, such as a git commit, the terminal will be inaccessible. You can get the filetype from the bufnr or filetype arguments of the `post_open` callback to only close the terminal for blocking files, and the `block_end` callback to reopen it afterwards.
 
 Here's my setup for toggleterm, including an autocmd to automatically close a git commit buffer on write:
 
@@ -127,15 +132,18 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
     'willothy/flatten.nvim',
     opts = {
         callbacks = {
-            pre_open = function()
-                -- Close toggleterm when an external open request is received
-                require("toggleterm").toggle(0)
-            end,
             post_open = function(bufnr, winnr, ft, is_blocking)
+                if is_blocking then
+                    -- Hide the terminal while it's blocking
+                    require("toggleterm").toggle(0)
+                else
+                    -- If it's a normal file, just switch to its window
+                    vim.api.nvim_set_current_win(winnr)
+                end
+
+                -- If the file is a git commit, create one-shot autocmd to delete its buffer on write
+                -- If you just want the toggleable terminal integration, ignore this bit
                 if ft == "gitcommit" then
-                    -- If the file is a git commit, create one-shot autocmd to delete it on write
-                    -- If you just want the toggleable terminal integration, ignore this bit and only use the
-                    -- code in the else block
                     vim.api.nvim_create_autocmd(
                         "BufWritePost",
                         {
@@ -153,11 +161,6 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
                             end
                         }
                     )
-                elseif not is_blocking then
-                    -- If it's a normal file, then reopen the terminal, then switch back to the newly opened window
-                    -- This gives the appearance of the window opening independently of the terminal
-                    require("toggleterm").toggle(0)
-                    vim.api.nvim_set_current_win(winnr)
                 end
             end,
             block_end = function()
