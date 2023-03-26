@@ -134,7 +134,7 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
                 require("toggleterm").toggle(0)
             end,
             post_open = function(bufnr, winnr, ft, is_blocking)
-                if ft == "gitcommit" then
+                if is_blocking then
                     -- If the file is a git commit, create one-shot autocmd to delete it on write
                     -- If you just want the toggleable terminal integration, ignore this bit and only use the
                     -- code in the else block
@@ -155,7 +155,7 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
                             end
                         }
                     )
-                elseif not is_blocking
+                else
                     -- If it's a normal file, then reopen the terminal, then switch back to the newly opened window
                     -- This gives the appearance of the window opening independently of the terminal
                     require("toggleterm").toggle(0)
