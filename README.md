@@ -131,6 +131,9 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
 {
     'willothy/flatten.nvim',
     opts = {
+        window = {
+            open = "alternate"
+        },
         callbacks = {
             post_open = function(bufnr, winnr, ft, is_blocking)
                 if is_blocking then
