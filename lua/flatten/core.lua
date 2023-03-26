@@ -21,7 +21,7 @@ local function notify_when_done(pipe, bufnr, callback, ft)
 		callback = function()
 			unblock_guest(pipe, { bufunload, bufdelete })
 			callback(ft)
-		end
+		end,
 	})
 	bufunload = vim.api.nvim_create_autocmd("BufUnload", {
 		buffer = bufnr,
@@ -29,7 +29,7 @@ local function notify_when_done(pipe, bufnr, callback, ft)
 		callback = function()
 			unblock_guest(pipe, { quitpre, bufdelete })
 			callback(ft)
-		end
+		end,
 	})
 	bufdelete = vim.api.nvim_create_autocmd("BufDelete", {
 		buffer = bufnr,
@@ -37,7 +37,7 @@ local function notify_when_done(pipe, bufnr, callback, ft)
 		callback = function()
 			unblock_guest(pipe, { quitpre, bufunload })
 			callback(ft)
-		end
+		end,
 	})
 end
 
@@ -62,7 +62,7 @@ M.edit_files = function(args, response_pipe, guest_cwd, stdin, force_block)
 	if nargs > 0 then
 		local argstr = ""
 		for i, arg in ipairs(args) do
-			local p = vim.fn.fnameescape(vim.loop.fs_realpath(arg) or (guest_cwd .. '/' .. arg))
+			local p = vim.fn.fnameescape(vim.loop.fs_realpath(arg) or (guest_cwd .. "/" .. arg))
 			args[i] = p
 			if argstr == "" or argstr == nil then
 				argstr = p
@@ -125,6 +125,10 @@ M.edit_files = function(args, response_pipe, guest_cwd, stdin, force_block)
 		end
 		if open == "current" then
 			vim.cmd("edit " .. focus)
+		elseif open == "alternate" then
+			local winnr = vim.fn.win_getid(vim.fn.winnr("#"))
+			vim.api.nvim_win_set_buf(winnr, vim.fn.bufnr(focus))
+			vim.api.nvim_set_current_win(winnr)
 		elseif open == "split" then
 			vim.cmd("split " .. focus)
 		elseif open == "vsplit" then
