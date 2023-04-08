@@ -2,6 +2,10 @@ local M = {}
 
 M.config = {
 	callbacks = {
+		---@param argv table a list of all the arguments in the nested session
+		should_block = function(argv)
+			return false
+		end,
 		pre_open = function()
 		end,
 		post_open = function(bufnr, winnr, filetype, is_blocking)

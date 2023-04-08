@@ -11,7 +11,8 @@ end
 local function send_files(host, files, stdin)
 	if #files < 1 and #stdin < 1 then return end
 
-	local force_block = vim.g.flatten_wait ~= nil
+	local config = require("flatten").config
+	local force_block = vim.g.flatten_wait ~= nil or config.callbacks.should_block(vim.v.argv)
 
 	local server = vim.fn.fnameescape(vim.v.servername)
 	local cwd = vim.fn.fnameescape(vim.fn.getcwd( -1, -1))
