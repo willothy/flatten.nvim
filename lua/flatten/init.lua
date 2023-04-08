@@ -10,6 +10,7 @@ M.config = {
 		post_open = function(bufnr, winnr, filetype, is_blocking) end,
 		block_end = function(filetype) end,
 	},
+	allow_cmd_passthrough = true,
 	block_for = {
 		gitcommit = true,
 	},

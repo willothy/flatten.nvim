@@ -76,17 +76,19 @@ M.edit_files = function(opts)
 	end
 
 	local is_cmd = false
-	for _, arg in ipairs(argv) do
-		if is_cmd then
-			is_cmd = false
-			-- execute --cmd <cmd> commands
-			vim.api.nvim_exec2(arg, {})
-		elseif arg:sub(1, 1) == "+" then
-			local cmd = string.sub(arg, 2, -1)
-			table.insert(postcmds, cmd)
-		elseif arg == "--cmd" then
-			-- next arg is the actual command
-			is_cmd = true
+	if config.allow_cmd_passthrough then
+		for _, arg in ipairs(argv) do
+			if is_cmd then
+				is_cmd = false
+				-- execute --cmd <cmd> commands
+				vim.api.nvim_exec2(arg, {})
+			elseif arg:sub(1, 1) == "+" then
+				local cmd = string.sub(arg, 2, -1)
+				table.insert(postcmds, cmd)
+			elseif arg == "--cmd" then
+				-- next arg is the actual command
+				is_cmd = true
+			end
 		end
 	end
 
