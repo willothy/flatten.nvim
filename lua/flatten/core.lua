@@ -81,7 +81,12 @@ M.edit_files = function(opts)
 			if is_cmd then
 				is_cmd = false
 				-- execute --cmd <cmd> commands
-				vim.api.nvim_exec2(arg, {})
+				if vim.api.nvim_exec2 then
+					-- nvim_exec2 only exists in nvim 0.9+
+					vim.api.nvim_exec2(arg, {})
+				else
+					vim.api.nvim_exec(arg, false)
+				end
 			elseif arg:sub(1, 1) == "+" then
 				local cmd = string.sub(arg, 2, -1)
 				table.insert(postcmds, cmd)
