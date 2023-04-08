@@ -11,6 +11,7 @@ Flatten allows you to open files from a neovim terminal buffer in your current n
   - [x] Open in vsplit, split, tab, current window, or alternate window
 - [x] Pipe from terminal into a new Neovim buffer ([demo](https://user-images.githubusercontent.com/38540736/225779817-ed7efea8-9108-4f28-983f-1a889d32826f.mp4))
 - [x] Setting to force blocking from the commandline, regardless of filetype
+- [X] Command passthrough from guest to host
 
 ## Plans and Ideas
 
@@ -73,6 +74,15 @@ nvim --cmd 'let g:flatten_wait=1' file1
 # allows edit-exec
 # in your .bashrc, .zshrc, etc.
 export VISUAL="nvim --cmd 'let g:flatten_wait=1'"
+
+# enable manpage formatting
+export MANPAGER="nvim +Man!"
+
+# execute a command in the **host**, *before* opening files
+nvim --cmd <cmd>
+
+# execute a command on the **host**, *after* opening files
+nvim +<cmd>
 ```
 
 ## Configuration
@@ -101,6 +111,8 @@ Flatten comes with the following defaults:
     block_for = {
         gitcommit = true
     },
+    -- Command passthrough
+    allow_cmd_passthrough = true,
     -- Window options
     window = {
         -- Options:
