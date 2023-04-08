@@ -78,7 +78,8 @@ M.edit_files = function(opts)
 	if nargs > 0 then
 		local argstr = ""
 		for i, arg in ipairs(files) do
-			local p = vim.fn.fnameescape(guest_cwd .. "/" .. arg)
+			local is_absolute = string.find(arg, "^/")
+			local p = vim.fn.fnameescape(is_absolute and arg or (guest_cwd .. "/" .. arg))
 			files[i] = p
 			if argstr == "" or argstr == nil then
 				argstr = p
