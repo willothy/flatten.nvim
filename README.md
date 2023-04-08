@@ -84,6 +84,10 @@ Flatten comes with the following defaults:
 ```lua
 {
     callbacks = {
+        ---@param argv table a list of all the arguments in the nested session
+        should_block = function(argv)
+          return false
+        end,
         -- Called when a request to edit file(s) is received
         pre_open = function() end,
         -- Called after a file is opened
@@ -105,7 +109,7 @@ Flatten comes with the following defaults:
         -- tab            -> open in new tab
         -- split          -> open in split
         -- vsplit         -> open in vsplit
-        -- func(new_bufs) -> only open the files, allowing you to handle window opening yourself.
+        -- func(new_bufs, argv) -> only open the files, allowing you to handle window opening yourself.
         -- Argument is an array of buffer numbers representing the newly opened files.
         open = "current",
         -- Affects which file gets focused when opening multiple at once
@@ -135,6 +139,13 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
             open = "alternate"
         },
         callbacks = {
+            should_block = function(argv)
+                -- In this case, we would block if we find the diff-mode option
+                -- Note that argv contains all the parts of the CLI command, including
+                -- Neovim's path, commands, options and files.
+                -- See: :help v:argv
+                return vim.tbl_contains(argv, "-d")
+            end,
             post_open = function(bufnr, winnr, ft, is_blocking)
                 if is_blocking then
                     -- Hide the terminal while it's blocking
