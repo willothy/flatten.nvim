@@ -63,32 +63,50 @@ M.edit_files = function(opts)
 	local focus_first = config.window.focus == "first"
 	local open = config.window.open
 
-	local nargs = #files
+	local nfiles = #files
 	local stdin_lines = #stdin
 
-	if nargs == 0 and stdin_lines == 0 then
+	--- commands passed through with +<cmd>, to be executed after opening files
+	local postcmds = {}
+
+	if nfiles == 0 and stdin_lines == 0 then
 		-- If there are no new bufs, don't open anything
 		-- and tell the guest not to block
 		return false
 	end
 
+	local is_cmd = false
+	for _, arg in ipairs(argv) do
+		if is_cmd then
+			is_cmd = false
+			-- execute --cmd <cmd> commands
+			vim.api.nvim_exec2(arg, {})
+		elseif arg:sub(1, 1) == "+" then
+			local cmd = string.sub(arg, 2, -1)
+			table.insert(postcmds, cmd)
+		elseif arg == "--cmd" then
+			-- next arg is the actual command
+			is_cmd = true
+		end
+	end
+
 	callbacks.pre_open()
 
 	-- Open files
-	if nargs > 0 then
+	if nfiles > 0 then
 		local argstr = ""
-		for i, arg in ipairs(files) do
-			local is_absolute = string.find(arg, "^/")
-			local p = vim.fn.fnameescape(is_absolute and arg or (guest_cwd .. "/" .. arg))
-			files[i] = p
+		for i, fname in ipairs(files) do
+			local is_absolute = string.find(fname, "^/")
+			local fpath = vim.fn.fnameescape(is_absolute and fname or (guest_cwd .. "/" .. fname))
+			files[i] = fpath
 			if argstr == "" or argstr == nil then
-				argstr = p
+				argstr = fpath
 			else
-				argstr = argstr .. " " .. p
+				argstr = argstr .. " " .. fpath
 			end
 		end
-		local wildignore = vim.o.wildignore
 		-- Hack to work around https://github.com/vim/vim/issues/4610
+		local wildignore = vim.o.wildignore
 		vim.o.wildignore = ""
 		vim.cmd("0argadd " .. argstr)
 		vim.o.wildignore = wildignore
@@ -164,6 +182,11 @@ M.edit_files = function(opts)
 	local bufnr = vim.api.nvim_get_current_buf()
 
 	local block = config.block_for[ft] or force_block
+
+	for _, cmd in ipairs(postcmds) do
+		vim.api.nvim_exec2(cmd, {})
+	end
+
 	callbacks.post_open(bufnr, winnr, ft, block)
 
 	if block then
