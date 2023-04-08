@@ -41,13 +41,29 @@ local function notify_when_done(pipe, bufnr, callback, ft)
 	})
 end
 
-M.edit_files = function(args, response_pipe, guest_cwd, stdin, force_block)
+---@class EditFilesOptions
+---@field files table          list of files passed into nested instance
+---@field response_pipe string guest default socket
+---@field guest_cwd string     guest global cwd
+---@field argv table           full list of options passed to the nested instance, see v:argv
+---@field stdin table          stdin lines or {}
+---@field force_block boolean  enable blocking
+
+---@param opts EditFilesOptions
+---@return boolean
+M.edit_files = function(opts)
+	local files = opts.files
+	local response_pipe = opts.response_pipe
+	local guest_cwd = opts.guest_cwd
+	local stdin = opts.stdin
+	local force_block = opts.force_block
+	local argv = opts.argv
 	local config = require("flatten").config
 	local callbacks = config.callbacks
 	local focus_first = config.window.focus == "first"
 	local open = config.window.open
 
-	local nargs = #args
+	local nargs = #files
 	local stdin_lines = #stdin
 
 	if nargs == 0 and stdin_lines == 0 then
@@ -61,9 +77,9 @@ M.edit_files = function(args, response_pipe, guest_cwd, stdin, force_block)
 	-- Open files
 	if nargs > 0 then
 		local argstr = ""
-		for i, arg in ipairs(args) do
+		for i, arg in ipairs(files) do
 			local p = vim.fn.fnameescape(guest_cwd .. "/" .. arg)
-			args[i] = p
+			files[i] = p
 			if argstr == "" or argstr == nil then
 				argstr = p
 			else
@@ -103,7 +119,7 @@ M.edit_files = function(args, response_pipe, guest_cwd, stdin, force_block)
 	if type(open) == "function" then
 		-- Pass list of new buffer IDs
 		local bufs = vim.api.nvim_list_bufs()
-		local start = #bufs - #args
+		local start = #bufs - #files
 		-- Add buffer for stdin
 		local newbufs = {}
 		-- If there's an stdin buf, push it to the table
@@ -116,9 +132,9 @@ M.edit_files = function(args, response_pipe, guest_cwd, stdin, force_block)
 				table.insert(newbufs, buf)
 			end
 		end
-		open(newbufs)
+		open(newbufs, argv)
 	elseif type(open) == "string" then
-		local focus = vim.fn.argv(focus_first and 0 or (#args - 1))
+		local focus = vim.fn.argv(focus_first and 0 or (#files - 1))
 		-- If there's an stdin buf, focus that
 		if stdin_buf then
 			focus = vim.api.nvim_buf_get_name(stdin_buf)

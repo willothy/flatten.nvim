@@ -20,20 +20,14 @@ local function send_files(host, files, stdin)
 		cwd = sanitize(cwd)
 	end
 
-	local call = string.format([[
-		return require('flatten.core').edit_files(
-			%s,   -- `args` passed into nested instance.
-			'%s', -- guest default socket.
-			'%s', -- guest global cwd.
-			%s,   -- stdin lines or {}.
-			%s    -- enable blocking
-		)]],
-		vim.inspect(files),
-		server,
-		cwd,
-		vim.inspect(stdin),
-		force_block and 'true' or 'false'
-	)
+	local call = string.format([[return require('flatten.core').edit_files(%s)]], vim.inspect({
+		files = files,
+		response_pipe = server,
+		guest_cwd = cwd,
+		stdin = stdin,
+		argv = vim.v.argv,
+		force_block = force_block,
+	}))
 
 	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
 		vim.api.nvim_buf_delete(buf, { force = true })
