@@ -7,8 +7,8 @@ Flatten allows you to open files from a neovim terminal buffer in your current n
 - [x] Open files from terminal buffers without creating a nested session
 - [x] Allow blocking for git commits
 - [x] Configuration
-  - [x] Callbacks for user-specific workflows
-  - [x] Open in vsplit, split, tab, or current window
+  - [x] Callbacks/hooks for user-specific workflows
+  - [x] Open in vsplit, split, tab, current window, or alternate window
 - [x] Pipe from terminal into a new Neovim buffer ([demo](https://user-images.githubusercontent.com/38540736/225779817-ed7efea8-9108-4f28-983f-1a889d32826f.mp4))
 - [x] Setting to force blocking from the commandline, regardless of filetype
 
@@ -140,11 +140,16 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
         },
         callbacks = {
             should_block = function(argv)
-                -- In this case, we would block if we find the diff-mode option
                 -- Note that argv contains all the parts of the CLI command, including
                 -- Neovim's path, commands, options and files.
                 -- See: :help v:argv
-                return vim.tbl_contains(argv, "-d")
+
+                -- In this case, we would block if we find the `-b` flag
+                -- This allows you to use `nvim -b file1` instead of `nvim --cmd 'let g:flatten_wait=1' file1`
+                return vim.tbl_contains(argv, "-b")
+
+                -- Alternatively, we can block if we find the diff-mode option
+                -- return vim.tbl_contains(argv, "-d")
             end,
             post_open = function(bufnr, winnr, ft, is_blocking)
                 if is_blocking then
