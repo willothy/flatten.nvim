@@ -191,7 +191,11 @@ M.edit_files = function(opts)
 	local block = config.block_for[ft] or force_block
 
 	for _, cmd in ipairs(postcmds) do
-		vim.api.nvim_exec2(cmd, {})
+		if vim.api.nvim_exec2 then
+			vim.api.nvim_exec2(cmd, {})
+		else
+			vim.api.nvim_exec(cmd, false)
+		end
 	end
 
 	callbacks.post_open(bufnr, winnr, ft, block)
