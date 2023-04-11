@@ -11,6 +11,9 @@ M.config = {
 		block_end = function(filetype) end,
 	},
 	allow_cmd_passthrough = true,
+	---Allow a nested session to open when nvim is
+	---executed without any args
+	nest_if_no_args = false,
 	block_for = {
 		gitcommit = true,
 	},

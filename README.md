@@ -113,6 +113,8 @@ Flatten comes with the following defaults:
     },
     -- Command passthrough
     allow_cmd_passthrough = true,
+    -- Allow a nested session to open if Neovim is opened without arguments
+    nest_if_no_args = false,
     -- Window options
     window = {
         -- Options:

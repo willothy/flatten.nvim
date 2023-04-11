@@ -51,9 +51,9 @@ end
 M.init = function(host_pipe)
 	-- Connect to host process
 	local host = vim.fn.sockconnect("pipe", host_pipe, { rpc = true })
-	-- Exit on connection error
+	-- Return on connection error
 	if host == 0 then
-		vim.cmd("qa!")
+		return
 	end
 
 	-- Get new files
@@ -74,6 +74,9 @@ M.init = function(host_pipe)
 		pattern = "*",
 		callback = function()
 			if nfiles < 1 then
+				if require("flatten").config.nest_if_no_args == true then
+					return
+				end
 				vim.cmd("qa!")
 			end
 
