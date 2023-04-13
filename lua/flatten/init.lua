@@ -24,7 +24,7 @@ M.config = {
 }
 
 M.setup = function(opt)
-	M.config = vim.tbl_deep_extend("keep", opt, M.config)
+	M.config = vim.tbl_deep_extend("keep", opt or {}, M.config)
 
 	local pipe_path = os.getenv("NVIM")
 	if pipe_path ~= nil then
