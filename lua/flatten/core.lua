@@ -138,37 +138,34 @@ M.edit_files = function(opts)
 			end
 			name = newname
 		end
+		files[#files + 1] = name
 		vim.api.nvim_buf_set_name(stdin_buf, name)
 	end
 
+	local winnr
+	local bufnr
+
 	-- Open window
 	if type(open) == "function" then
-		-- Pass list of new buffer IDs
-		local bufs = vim.api.nvim_list_bufs()
-		local start = #bufs - #files
 		-- Add buffer for stdin
 		local newbufs = {}
 		-- If there's an stdin buf, push it to the table
 		if stdin_buf then
-			start = start - 1
 			table.insert(newbufs, stdin_buf)
 		end
-		for i, buf in ipairs(bufs) do
-			if i > start then
-				table.insert(newbufs, buf)
-			end
-		end
-		open(newbufs, argv)
+		bufnr = open(files, argv)
+		winnr = vim.fn.bufwinid(bufnr)
 	elseif type(open) == "string" then
 		local focus = vim.fn.argv(focus_first and 0 or (#files - 1))
 		-- If there's an stdin buf, focus that
+		winnr = vim.api.nvim_get_current_win()
 		if stdin_buf then
 			focus = vim.api.nvim_buf_get_name(stdin_buf)
 		end
 		if open == "current" then
 			vim.cmd("edit " .. focus)
 		elseif open == "alternate" then
-			local winnr = vim.fn.win_getid(vim.fn.winnr("#"))
+			winnr = vim.fn.win_getid(vim.fn.winnr("#"))
 			vim.api.nvim_win_set_buf(winnr, vim.fn.bufnr(focus))
 			vim.api.nvim_set_current_win(winnr)
 		elseif open == "split" then
@@ -178,15 +175,13 @@ M.edit_files = function(opts)
 		else
 			vim.cmd("tabedit " .. focus)
 		end
+		bufnr = vim.api.nvim_get_current_buf()
 	else
 		vim.api.nvim_err_writeln("Flatten: 'config.open.focus' expects a function or string, got " .. type(open))
 		return false
 	end
 
-	local ft = vim.bo.filetype
-
-	local winnr = vim.api.nvim_get_current_win()
-	local bufnr = vim.api.nvim_get_current_buf()
+	local ft = vim.api.nvim_buf_get_option(bufnr, 'filetype')
 
 	local block = config.block_for[ft] or force_block
 
