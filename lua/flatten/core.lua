@@ -138,7 +138,6 @@ M.edit_files = function(opts)
 			end
 			name = newname
 		end
-		files[#files + 1] = name
 		vim.api.nvim_buf_set_name(stdin_buf, name)
 	end
 
@@ -147,13 +146,7 @@ M.edit_files = function(opts)
 
 	-- Open window
 	if type(open) == "function" then
-		-- Add buffer for stdin
-		local newbufs = {}
-		-- If there's an stdin buf, push it to the table
-		if stdin_buf then
-			table.insert(newbufs, stdin_buf)
-		end
-		bufnr = open(files, argv)
+		bufnr = open(files, argv, stdin_buf)
 		winnr = vim.fn.bufwinid(bufnr)
 	elseif type(open) == "string" then
 		local focus = vim.fn.argv(focus_first and 0 or (#files - 1))
