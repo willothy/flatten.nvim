@@ -147,7 +147,9 @@ M.edit_files = function(opts)
 	-- Open window
 	if type(open) == "function" then
 		bufnr = open(files, argv, stdin_buf)
-		winnr = vim.fn.bufwinid(bufnr)
+		if bufnr ~= nil then
+			winnr = vim.fn.bufwinid(bufnr)
+		end
 	elseif type(open) == "string" then
 		local focus = vim.fn.argv(focus_first and 0 or (#files - 1))
 		-- If there's an stdin buf, focus that
@@ -174,7 +176,10 @@ M.edit_files = function(opts)
 		return false
 	end
 
-	local ft = vim.api.nvim_buf_get_option(bufnr, 'filetype')
+	local ft
+	if bufnr ~= nil then
+		ft = vim.api.nvim_buf_get_option(bufnr, 'filetype')
+	end
 
 	local block = config.block_for[ft] or force_block
 
