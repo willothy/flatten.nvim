@@ -11,7 +11,7 @@ Flatten allows you to open files from a neovim terminal buffer in your current n
   - [x] Open in vsplit, split, tab, current window, or alternate window
 - [x] Pipe from terminal into a new Neovim buffer ([demo](https://user-images.githubusercontent.com/38540736/225779817-ed7efea8-9108-4f28-983f-1a889d32826f.mp4))
 - [x] Setting to force blocking from the commandline, regardless of filetype
-- [X] Command passthrough from guest to host
+- [x] Command passthrough from guest to host
 
 ## Plans and Ideas
 
@@ -123,8 +123,11 @@ Flatten comes with the following defaults:
         -- tab            -> open in new tab
         -- split          -> open in split
         -- vsplit         -> open in vsplit
-        -- func(new_bufs, argv) -> only open the files, allowing you to handle window opening yourself.
-        -- Argument is an array of buffer numbers representing the newly opened files.
+        -- func(new_file_names, argv, stdin_buf_id) -> only open the files, allowing you to handle window opening yourself.
+        -- The first argument is an array of file names representing the newly opened files.
+        -- The third argument is only provided when a buffer is created from stdin.
+        -- IMPORTANT: For `block_for` to work, you need to return a buffer number.
+        --            The `filetype` of this buffer will determine whether block should happen or not.
         open = "current",
         -- Affects which file gets focused when opening multiple at once
         -- Options:
