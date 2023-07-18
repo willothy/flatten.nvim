@@ -20,6 +20,7 @@ Ideas:
 - [ ] Multi-screen support
   - [ ] Move buffers between Neovim instances in separate windows
   - [ ] Single cursor between Neovim instances in separate windows
+- [ ] Flatten instances based on working directory
 
 If you have an idea or feature request, open an issue with the `enhancement` tag!
 
@@ -134,21 +135,19 @@ Flatten comes with the following defaults:
         -- "first"        -> open first file of new files (default)
         -- "last"         -> open last file of new files
         focus = "first"
-    }
+    },
 	-- Override this function to use a different socket to connect to the host
 	-- On the host side this can return nil or the socket address.
-	-- On the guest side this should return the socket address.
+	-- On the guest side this should return the socket address
+        -- or a non-zero channel id from `sockconnect`
 	-- flatten.nvim will detect if the address refers to this instance of nvim, to determine if this is a host or a guest
-	pipe_path = function()
-        -- This environment variable exists inside terminals/shell running inside Neovim.
-		if vim.env.NVIM then return vim.env.NVIM end
-        -- You can construct a custom address and use `serverstart()` to create a socket there
-        -- As long as the guest constructs the same address it will connect to the host
-        local addr = ("%s/%s"):format(vim.fn.stdpath("run"), socket_name)
-         -- On the guest side `serverstart()` will fail as the socket already exists
-        local ok = pcall(vim.fn.serverstart, addr)
-        return addr
-	end,
+	pipe_path = require'flatten'.default_pipe_path,
+    -- The `default_pipe_path` will treat the first nvim instance within a single kitty/wezterm session as the host
+    -- You can configure this behaviour using the following:
+	one_per = {
+        kitty = true, -- Flatten all instance in the current Kitty session
+        wezterm = true, -- Flatten all instance in the current Wezterm session
+    },
 }
 ```
 
@@ -225,21 +224,7 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
 
 ```
 
-#### One instance per Kitty/Wezterm
-
-```lua
-    pipe_path = function()
-      -- If running in a terminal inside Neovim:
-      if vim.env.NVIM then return vim.env.NVIM end
-      -- If running in a Kitty terminal,
-      -- all tabs/windows/os-windows in the same instance of kitty will open in the first neovim instance
-      if vim.env.KITTY_PID then
-        local addr = ("%s/%s"):format(vim.fn.stdpath "run", "kitty.nvim-" .. vim.env.KITTY_PID)
-        local ok = pcall(vim.fn.serverstart, addr)
-        return addr
-      end
-    end,
-```
+#### `pipe_path`
 
 ## About
 

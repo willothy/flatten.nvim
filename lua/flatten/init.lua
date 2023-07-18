@@ -1,5 +1,45 @@
 local M = {}
 
+M.try_address = function(addr, startserver)
+	if not addr:find("/") then
+		addr = ("%s/%s"):format(vim.fn.stdpath("run"), addr)
+	end
+	if vim.loop.fs_stat(addr) then
+		local ok, sock = require("flatten.guest").sockconnect(addr)
+		if ok and sock > 0 then
+			return sock
+		end
+	elseif startserver then
+		local ok = pcall(vim.fn.serverstart, addr)
+		if ok then
+			return addr
+		end
+	end
+end
+M.default_pipe_path = function()
+	-- If running in a terminal inside Neovim:
+	if vim.env.NVIM then
+		return vim.env.NVIM
+	end
+	-- If running in a Kitty terminal,
+	-- all tabs/windows/os-windows in the same instance of kitty will open in the first neovim instance
+	if vim.env.KITTY_PID and M.config.one_per.kitty then
+		local ret = M.try_address("kitty.nvim-" .. vim.env.KITTY_PID, true)
+		if ret ~= nil then
+			return ret
+		end
+	end
+	-- If running in a Wezterm,
+	-- all tabs/windows/windows in the same instance of wezterm will open in the first neovim instance
+	if vim.env.WEZTERM_UNIX_SOCKET and M.config.one_per.wezterm then
+		local pid = vim.env.WEZTERM_UNIX_SOCKET:match("gui%-sock%-(%d)")
+		local ret = M.try_address("wezterm.nvim-" .. pid, true)
+		if ret ~= nil then
+			return ret
+		end
+	end
+end
+
 M.config = {
 	callbacks = {
 		---@param argv table a list of all the arguments in the nested session
@@ -22,9 +62,8 @@ M.config = {
 		open = "current",
 		focus = "first",
 	},
-	pipe_path = function()
-		return os.getenv("NVIM")
-	end,
+	one_per = { kitty = true, wezterm = true },
+	pipe_path = M.default_pipe_path,
 }
 
 M.setup = function(opt)
@@ -34,9 +73,14 @@ M.setup = function(opt)
 	if type(pipe_path) == "function" then
 		pipe_path = pipe_path()
 	end
-	if pipe_path ~= nil and not vim.tbl_contains(vim.fn.serverlist(), pipe_path, {}) then
-		require("flatten.guest").init(pipe_path)
+
+	if pipe_path == nil then
+		return
 	end
+	if vim.tbl_contains(vim.fn.serverlist(), pipe_path, {}) then
+		return
+	end
+	require("flatten.guest").init(pipe_path)
 end
 
 return M
