@@ -58,12 +58,25 @@ local function send_files(files, stdin)
 	M.maybe_block(block)
 end
 
+function M.sockconnect(host_pipe)
+	local ok, sock = pcall(vim.fn.sockconnect, "pipe", host_pipe, { rpc = true })
+	if ok then
+		return sock
+	else
+		return 0
+	end
+end
+
 M.init = function(host_pipe)
 	-- Connect to host process
-	host = vim.fn.sockconnect("pipe", host_pipe, { rpc = true })
-	-- Return on connection error
-	if host == 0 then
-		return
+	if type(host_pipe) == "number" and host > 0 then
+		host = host_pipe
+	else
+		host = M.sockconnect(host_pipe)
+		-- Return on connection error
+		if host == 0 then
+			return
+		end
 	end
 
 	-- Get new files
@@ -83,9 +96,8 @@ M.init = function(host_pipe)
 	vim.api.nvim_create_autocmd("BufEnter", {
 		pattern = "*",
 		callback = function()
-			files = vim.tbl_map(function(bufnr)
-				local name = vim.fn.bufname(bufnr)
-				return name
+			files = vim.tbl_map(function(b)
+				return vim.api.nvim_buf_get_name(b)
 			end, vim.api.nvim_list_bufs())
 			nfiles = #files
 
