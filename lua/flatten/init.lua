@@ -6,6 +6,7 @@ M.config = {
 		should_block = function(argv)
 			return false
 		end,
+		no_files = function() end,
 		pre_open = function() end,
 		post_open = function(bufnr, winnr, filetype, is_blocking) end,
 		block_end = function(filetype) end,
