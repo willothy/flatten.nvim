@@ -135,10 +135,26 @@ Flatten comes with the following defaults:
         -- "last"         -> open last file of new files
         focus = "first"
     }
+	-- Override this function to use a different socket to connect to the host
+	-- On the host side this can return nil or the socket address.
+	-- On the guest side this should return the socket address.
+	-- flatten.nvim will detect if the address refers to this instance of nvim, to determine if this is a host or a guest
+	pipe_path = function()
+        -- This environment variable exists inside terminals/shell running inside Neovim.
+		if vim.env.NVIM then return vim.env.NVIM end
+        -- You can construct a custom address and use `serverstart()` to create a socket there
+        -- As long as the guest constructs the same address it will connect to the host
+        local addr = ("%s/%s"):format(vim.fn.stdpath("run"), socket_name)
+         -- On the guest side `serverstart()` will fail as the socket already exists
+        local ok = pcall(vim.fn.serverstart, addr)
+        return addr
+	end,
 }
 ```
 
-### Advanced configuration
+### Advanced configuration examples
+
+#### Toggleterm
 
 If you use a toggleable terminal and don't want the new buffer(s) to be opened in your current window, you can use the `alternate` mode instead of `current` to open in your last window. With this method, the terminal doesn't need to be closed and re-opened as it did with the [old example config](https://github.com/willothy/flatten.nvim/blob/c986f98bc1d1e2365dfb2e97dda58ca5d0ae24ae/README.md).
 
@@ -207,6 +223,22 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
     }
 }
 
+```
+
+#### One instance per Kitty/Wezterm
+
+```lua
+    pipe_path = function()
+      -- If running in a terminal inside Neovim:
+      if vim.env.NVIM then return vim.env.NVIM end
+      -- If running in a Kitty terminal,
+      -- all tabs/windows/os-windows in the same instance of kitty will open in the first neovim instance
+      if vim.env.KITTY_PID then
+        local addr = ("%s/%s"):format(vim.fn.stdpath "run", "kitty.nvim-" .. vim.env.KITTY_PID)
+        local ok = pcall(vim.fn.serverstart, addr)
+        return addr
+      end
+    end,
 ```
 
 ## About
