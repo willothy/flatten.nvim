@@ -83,6 +83,12 @@ M.init = function(host_pipe)
 	vim.api.nvim_create_autocmd("BufEnter", {
 		pattern = "*",
 		callback = function()
+			files = vim.tbl_map(function(bufnr)
+				local name = vim.fn.bufname(bufnr)
+				return name
+			end, vim.api.nvim_list_bufs())
+			nfiles = #files
+
 			if nfiles < 1 then
 				local result = M.exec_on_host("return require'flatten'.config.callbacks.no_files()")
 
