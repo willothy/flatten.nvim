@@ -6,7 +6,7 @@ M.try_address = function(addr, startserver)
 	end
 	if vim.loop.fs_stat(addr) then
 		local ok, sock = require("flatten.guest").sockconnect(addr)
-		if ok and sock > 0 then
+		if ok then
 			return sock
 		end
 	elseif startserver then
@@ -16,6 +16,7 @@ M.try_address = function(addr, startserver)
 		end
 	end
 end
+
 M.default_pipe_path = function()
 	-- If running in a terminal inside Neovim:
 	if vim.env.NVIM then

@@ -92,15 +92,28 @@ M.init = function(host_pipe)
 	vim.api.nvim_create_autocmd("BufEnter", {
 		pattern = "*",
 		callback = function()
-			local bufs = vim.tbl_filter(function(buffer)
-				local buftype = vim.bo[buffer].buftype
-				return vim.api.nvim_buf_is_loaded(buffer)
-					and vim.api.nvim_buf_is_valid(buffer)
-					and (buftype == "" or buftype == "acwrite")
-			end, vim.api.nvim_list_bufs())
-			files = vim.tbl_map(function(b)
-				return vim.api.nvim_buf_get_name(b)
-			end, bufs)
+			local function filter_map(tbl, f)
+				local result = {}
+				for _, v in ipairs(tbl) do
+					local r = f(v)
+					if r ~= nil then
+						table.insert(result, r)
+					end
+				end
+				return result
+			end
+			files = filter_map(vim.api.nvim_list_bufs(), function(buffer)
+				if not vim.api.nvim_buf_is_loaded(buffer) then
+					return
+				end
+				local buftype = vim.api.nvim_buf_get_option(buffer, "buftype")
+				if buftype ~= "" and buftype ~= "acwrite" then
+					return
+				end
+				if vim.api.nvim_buf_get_option(buffer, "buflisted") then
+					return vim.api.nvim_buf_get_name(buffer)
+				end
+			end)
 			nfiles = #files
 
 			if nfiles < 1 then
