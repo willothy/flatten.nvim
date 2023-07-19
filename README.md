@@ -197,28 +197,20 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
                 -- If the file is a git commit, create one-shot autocmd to delete its buffer on write
                 -- If you just want the toggleable terminal integration, ignore this bit
                 if ft == "gitcommit" then
-                    vim.api.nvim_create_autocmd(
-                        "BufWritePost",
-                        {
-                            buffer = bufnr,
-                            once = true,
-                            callback = function()
-                                -- This is a bit of a hack, but if you run bufdelete immediately
-                                -- the shell can occasionally freeze
-                                vim.defer_fn(
-                                    function()
-                                        vim.api.nvim_buf_delete(bufnr, {})
-                                    end,
-                                    50
-                                )
-                            end
-                        }
-                    )
+                    vim.api.nvim_create_autocmd("BufWritePost", {
+                        buffer = bufnr,
+                        once = true,
+                        callback = vim.schedule_wrap(function()
+                            vim.api.nvim_buf_delete(bufnr, {})
+                        end)
+                    })
                 end
             end,
             block_end = function()
                 -- After blocking ends (for a git commit, etc), reopen the terminal
-                require("toggleterm").toggle(0)
+                vim.schedule(function()
+                    require("toggleterm").toggle(0)
+                end)
             end
         }
     }
