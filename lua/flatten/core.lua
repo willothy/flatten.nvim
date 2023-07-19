@@ -131,7 +131,6 @@ M.edit_files = function(opts)
 	elseif type(open) == "string" then
 		local focus = vim.fn.argv(focus_first and 0 or (#files - 1))
 		-- If there's an stdin buf, focus that
-		winnr = vim.api.nvim_get_current_win()
 		if stdin_buf then
 			focus = vim.api.nvim_buf_get_name(stdin_buf)
 		end
@@ -148,6 +147,7 @@ M.edit_files = function(opts)
 		else
 			vim.cmd("tabedit " .. focus)
 		end
+		winnr = vim.api.nvim_get_current_win()
 		bufnr = vim.api.nvim_get_current_buf()
 	else
 		vim.api.nvim_err_writeln("Flatten: 'config.open.focus' expects a function or string, got " .. type(open))
