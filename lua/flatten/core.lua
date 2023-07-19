@@ -1,41 +1,19 @@
 local M = {}
 
-local function unblock_guest(guest_pipe, othercmds)
+local function unblock_guest(guest_pipe)
 	local response_sock = vim.fn.sockconnect("pipe", guest_pipe, { rpc = true })
 	vim.fn.rpcnotify(response_sock, "nvim_exec_lua", "vim.cmd('qa!')", {})
 	vim.fn.chanclose(response_sock)
-
-	for _, cmd in ipairs(othercmds) do
-		vim.api.nvim_del_autocmd(cmd)
-	end
 end
 
 local function notify_when_done(pipe, bufnr, callback, ft)
-	local quitpre
-	local bufunload
-	local bufdelete
-
-	quitpre = vim.api.nvim_create_autocmd("QuitPre", {
+	vim.api.nvim_create_autocmd({ "QuitPre", "BufUnload", "BufDelete" }, {
 		buffer = bufnr,
 		once = true,
+		group = M.augroup,
 		callback = function()
-			unblock_guest(pipe, { bufunload, bufdelete })
-			callback(ft)
-		end,
-	})
-	bufunload = vim.api.nvim_create_autocmd("BufUnload", {
-		buffer = bufnr,
-		once = true,
-		callback = function()
-			unblock_guest(pipe, { quitpre, bufdelete })
-			callback(ft)
-		end,
-	})
-	bufdelete = vim.api.nvim_create_autocmd("BufDelete", {
-		buffer = bufnr,
-		once = true,
-		callback = function()
-			unblock_guest(pipe, { quitpre, bufunload })
+			vim.api.nvim_del_augroup_by_id(M.augroup)
+			unblock_guest(pipe)
 			callback(ft)
 		end,
 	})
@@ -178,7 +156,7 @@ M.edit_files = function(opts)
 
 	local ft
 	if bufnr ~= nil then
-		ft = vim.api.nvim_buf_get_option(bufnr, 'filetype')
+		ft = vim.api.nvim_buf_get_option(bufnr, "filetype")
 	end
 
 	local block = config.block_for[ft] or force_block
@@ -194,6 +172,7 @@ M.edit_files = function(opts)
 	callbacks.post_open(bufnr, winnr, ft, block)
 
 	if block then
+		M.augroup = vim.api.nvim_create_augroup("flatten_notify", { clear = true })
 		notify_when_done(response_pipe, bufnr, callbacks.block_end, ft)
 	end
 	return block
