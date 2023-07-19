@@ -32,7 +32,7 @@ M.default_pipe_path = function()
 	-- If running in a Wezterm,
 	-- all tabs/windows/windows in the same instance of wezterm will open in the first neovim instance
 	if vim.env.WEZTERM_UNIX_SOCKET and M.config.one_per.wezterm then
-		local pid = vim.env.WEZTERM_UNIX_SOCKET:match("gui%-sock%-(%d)")
+		local pid = vim.env.WEZTERM_UNIX_SOCKET:match("gui%-sock%-(%d+)")
 		local ret = M.try_address("wezterm.nvim-" .. pid, true)
 		if ret ~= nil then
 			return ret

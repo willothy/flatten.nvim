@@ -59,22 +59,18 @@ local function send_files(files, stdin)
 end
 
 function M.sockconnect(host_pipe)
-	local ok, sock = pcall(vim.fn.sockconnect, "pipe", host_pipe, { rpc = true })
-	if ok then
-		return sock
-	else
-		return 0
-	end
+	return pcall(vim.fn.sockconnect, "pipe", host_pipe, { rpc = true })
 end
 
 M.init = function(host_pipe)
 	-- Connect to host process
-	if type(host_pipe) == "number" and host > 0 then
+	if type(host_pipe) == "number" then
 		host = host_pipe
 	else
-		host = M.sockconnect(host_pipe)
+		local ok
+		ok, host = M.sockconnect(host_pipe)
 		-- Return on connection error
-		if host == 0 then
+		if not ok then
 			return
 		end
 	end
@@ -97,7 +93,7 @@ M.init = function(host_pipe)
 		pattern = "*",
 		callback = function()
 			local bufs = vim.tbl_filter(function(buffer)
-        local buftype = vim.bo[buffer].buftype
+				local buftype = vim.bo[buffer].buftype
 				return vim.api.nvim_buf_is_loaded(buffer)
 					and vim.api.nvim_buf_is_valid(buffer)
 					and (buftype == "" or buftype == "acwrite")
