@@ -138,15 +138,15 @@ Flatten comes with the following defaults:
         -- "last"         -> open last file of new files
         focus = "first"
     },
-	-- Override this function to use a different socket to connect to the host
-	-- On the host side this can return nil or the socket address.
-	-- On the guest side this should return the socket address
-        -- or a non-zero channel id from `sockconnect`
-	-- flatten.nvim will detect if the address refers to this instance of nvim, to determine if this is a host or a guest
-	pipe_path = require'flatten'.default_pipe_path,
+    -- Override this function to use a different socket to connect to the host
+    -- On the host side this can return nil or the socket address.
+    -- On the guest side this should return the socket address
+    -- or a non-zero channel id from `sockconnect`
+    -- flatten.nvim will detect if the address refers to this instance of nvim, to determine if this is a host or a guest
+    pipe_path = require'flatten'.default_pipe_path,
     -- The `default_pipe_path` will treat the first nvim instance within a single kitty/wezterm session as the host
     -- You can configure this behaviour using the following:
-	one_per = {
+    one_per = {
         kitty = true, -- Flatten all instance in the current Kitty session
         wezterm = true, -- Flatten all instance in the current Wezterm session
     },
