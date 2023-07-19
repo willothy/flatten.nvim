@@ -16,7 +16,7 @@ end
 
 function M.maybe_block(block)
 	if not block then
-		vim.cmd("qa!")
+		os.exit(0)
 	end
 	vim.fn.chanclose(host)
 	while true do

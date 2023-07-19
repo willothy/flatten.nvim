@@ -40,6 +40,7 @@ M.default_pipe_path = function()
 	end
 end
 
+-- selene: allow(unused_variable)
 M.config = {
 	callbacks = {
 		---@param argv table a list of all the arguments in the nested session
