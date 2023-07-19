@@ -124,8 +124,8 @@ M.edit_files = function(opts)
 
 	-- Open window
 	if type(open) == "function" then
-		bufnr = open(files, argv, stdin_buf)
-		if bufnr ~= nil then
+		bufnr, winnr = open(files, argv, stdin_buf, guest_cwd)
+		if winnr == nil and bufnr ~= nil then
 			winnr = vim.fn.bufwinid(bufnr)
 		end
 	elseif type(open) == "string" then

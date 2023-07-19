@@ -124,10 +124,12 @@ Flatten comes with the following defaults:
         -- tab            -> open in new tab
         -- split          -> open in split
         -- vsplit         -> open in vsplit
-        -- func(new_file_names, argv, stdin_buf_id) -> only open the files, allowing you to handle window opening yourself.
+        -- function(new_file_names, argv, stdin_buf_id, guest_cwd) -> bufnr, winnr?
+        -- Only open the files, allowing you to handle window opening yourself.
         -- The first argument is an array of file names representing the newly opened files.
         -- The third argument is only provided when a buffer is created from stdin.
-        -- IMPORTANT: For `block_for` to work, you need to return a buffer number.
+        -- IMPORTANT: For `block_for` to work, you need to return a buffer number OR a buffer number and a window number.
+        --            The `winnr` return value is not required, `vim.fn.bufwinid(bufnr)` is used if it is not provided.
         --            The `filetype` of this buffer will determine whether block should happen or not.
         open = "current",
         -- Affects which file gets focused when opening multiple at once
