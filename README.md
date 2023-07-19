@@ -192,11 +192,17 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
                 else
                     -- If it's a normal file, just switch to its window
                     vim.api.nvim_set_current_win(winnr)
+
+                    -- If we're in a different wezterm pane/tab, switch to the current one
+                    -- Requires willothy/wezterm.nvim
+                    require("wezterm").switch_pane.id(
+                      tonumber(os.getenv("WEZTERM_PANE"))
+                    )
                 end
 
                 -- If the file is a git commit, create one-shot autocmd to delete its buffer on write
                 -- If you just want the toggleable terminal integration, ignore this bit
-                if ft == "gitcommit" then
+                if ft == "gitcommit" or ft == "gitrebase" then
                     vim.api.nvim_create_autocmd("BufWritePost", {
                         buffer = bufnr,
                         once = true,
@@ -218,7 +224,28 @@ Here's my setup for toggleterm, including an autocmd to automatically close a gi
 
 ```
 
-#### `pipe_path`
+#### Pipe path: One instance of Neovim for Kitty/Wezterm
+
+Flatten now checks for kitty and wezterm by default, but this is how it works.
+If you use another terminal emulator or multiplexer, you can implement
+your `pipe_path` function based on this.
+
+```lua
+pipe_path = function()
+  -- If running in a terminal inside Neovim:
+  if vim.env.NVIM then return vim.env.NVIM end
+  -- If running in a Kitty terminal,
+  -- all tabs/windows/os-windows in the same instance of kitty
+  -- will open in the first neovim instance
+  if vim.env.KITTY_PID then
+    local addr = ("%s/%s"):format(vim.fn.stdpath "run", "kitty.nvim-" .. vim.env.KITTY_PID)
+    if not vim.loop.fs_stat(addr) then
+      vim.fn.serverstart(addr)
+    end
+    return addr
+  end
+end
+```
 
 ## About
 
