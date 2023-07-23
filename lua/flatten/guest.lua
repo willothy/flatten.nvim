@@ -89,6 +89,7 @@ M.init = function(host_pipe)
 
 	vim.api.nvim_create_autocmd("BufEnter", {
 		pattern = "*",
+		once = true,
 		callback = function()
 			local function filter_map(tbl, f)
 				local result = {}
