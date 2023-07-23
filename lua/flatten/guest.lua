@@ -87,8 +87,6 @@ M.init = function(host_pipe)
 		end,
 	})
 
-	-- No arguments, user is probably opening a nested session intentionally
-	-- Or only piping input from stdin
 	vim.api.nvim_create_autocmd("BufEnter", {
 		pattern = "*",
 		callback = function()
@@ -110,24 +108,27 @@ M.init = function(host_pipe)
 				if buftype ~= "" and buftype ~= "acwrite" then
 					return
 				end
-				if vim.api.nvim_buf_get_option(buffer, "buflisted") then
-					return vim.api.nvim_buf_get_name(buffer)
+				local name = vim.api.nvim_buf_get_name(buffer)
+				if name ~= "" and vim.api.nvim_buf_get_option(buffer, "buflisted") then
+					return name
 				end
 			end)
 			nfiles = #files
 
+			-- No arguments, user is probably opening a nested session intentionally
+			-- Or only piping input from stdin
 			if nfiles < 1 then
 				local result = M.exec_on_host("return require'flatten'.config.callbacks.no_files()")
 
 				local should_nest, should_block
-				if result == nil then
-					local config = require("flatten").config
-					should_nest = config.nest_if_no_args
-				elseif type(result) == "boolean" then
+				local config = require("flatten").config
+				if type(result) == "boolean" then
 					should_nest = result
 				elseif type(result) == "table" then
 					should_nest = result.nest_if_no_args
 					should_block = result.should_block
+				else
+					should_nest = config.nest_if_no_args
 				end
 				if should_nest == true then
 					return
