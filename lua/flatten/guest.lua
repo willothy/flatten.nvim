@@ -118,17 +118,17 @@ M.init = function(host_pipe)
 			-- No arguments, user is probably opening a nested session intentionally
 			-- Or only piping input from stdin
 			if nfiles < 1 then
-				local result = M.exec_on_host("return require'flatten'.config.callbacks.no_files()")
-
-				local should_nest, should_block
 				local config = require("flatten").config
-				if type(result) == "boolean" then
-					should_nest = result
-				elseif type(result) == "table" then
-					should_nest = result.nest_if_no_args
-					should_block = result.should_block
-				else
-					should_nest = config.nest_if_no_args
+				local should_nest, should_block = config.nest_if_no_args, false
+
+				if config.callbacks.no_files then
+					local result = M.exec_on_host("return require'flatten'.config.callbacks.no_files()")
+					if type(result) == "boolean" then
+						should_nest = result
+					elseif type(result) == "table" then
+						should_nest = result.nest_if_no_args
+						should_block = result.should_block
+					end
 				end
 				if should_nest == true then
 					return
