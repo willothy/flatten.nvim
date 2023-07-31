@@ -25,6 +25,7 @@ If applicable, add screenshots and/or videos to help explain your problem.
 
 **Desktop (please complete the following information):**
  - OS
+ - Terminal emulator / nvim GUI
  - Neovim Version
 
 
