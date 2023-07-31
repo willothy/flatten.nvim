@@ -67,6 +67,13 @@ M.config = {
 	pipe_path = M.default_pipe_path,
 }
 
+local is_guest
+---@return boolean | nil
+---Returns true if in guest, false if in host, and nil if flatten has not yet been initialized.
+function M.is_guest()
+	return is_guest
+end
+
 M.setup = function(opt)
 	M.config = vim.tbl_deep_extend("keep", opt or {}, M.config)
 
@@ -75,12 +82,12 @@ M.setup = function(opt)
 		pipe_path = pipe_path()
 	end
 
-	if pipe_path == nil then
+	if pipe_path == nil or vim.tbl_contains(vim.fn.serverlist(), pipe_path, {}) then
+		is_guest = false
 		return
 	end
-	if vim.tbl_contains(vim.fn.serverlist(), pipe_path, {}) then
-		return
-	end
+
+	is_guest = true
 	require("flatten.guest").init(pipe_path)
 end
 
