@@ -18,7 +18,7 @@ function M.maybe_block(block)
   if not block then vim.cmd.qa({ bang = true }) end
   vim.fn.chanclose(host)
   while true do
-    vim.cmd("sleep 1")
+    vim.cmd.sleep(1)
   end
 end
 

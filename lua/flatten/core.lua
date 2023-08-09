@@ -84,23 +84,26 @@ M.edit_files = function(opts)
 
   -- Open files
   if nfiles > 0 then
-    local argstr = ""
     for i, fname in ipairs(files) do
       local is_absolute = string.find(fname, "^/")
       local fpath =
         vim.fn.fnameescape(is_absolute and fname or (guest_cwd .. "/" .. fname))
-      files[i] = fpath
-      if argstr == "" or argstr == nil then
-        argstr = fpath
+      local file = {
+        fname = fpath,
+        bufnr = vim.fn.bufadd(fpath),
+      }
+
+      -- set buf options
+      if vim.api.nvim_set_option_value then
+        vim.api.nvim_set_option_value("buflisted", true, {
+          buf = file.bufnr,
+        })
       else
-        argstr = argstr .. " " .. fpath
+        vim.api.nvim_buf_set_option(file.bufnr, "buflisted", true)
       end
+
+      files[i] = file
     end
-    -- Hack to work around https://github.com/vim/vim/issues/4610
-    local wildignore = vim.o.wildignore
-    vim.o.wildignore = ""
-    vim.cmd("0argadd " .. argstr)
-    vim.o.wildignore = wildignore
   end
 
   -- Create buffer for stdin pipe input
@@ -110,19 +113,11 @@ M.edit_files = function(opts)
     stdin_buf = vim.api.nvim_create_buf(true, false)
     -- Add text to buffer
     vim.api.nvim_buf_set_lines(stdin_buf, 0, 0, true, stdin)
-    -- Set buffer name based on the first line of stdin
-    local name = stdin[1]:sub(1, 12):gsub("[^%w%.]", "")
-    -- Ensure the name isn't empty or a duplicate
-    if vim.fn.bufname(name) ~= "" or name == "" then
-      local i = 1
-      local newname = name .. i
-      while vim.fn.bufname(newname) ~= "" do
-        i = i + 1
-        newname = name .. i
-      end
-      name = newname
-    end
-    vim.api.nvim_buf_set_name(stdin_buf, name)
+
+    stdin_buf = {
+      fname = "",
+      bufnr = stdin_buf,
+    }
   end
 
   local winnr
@@ -133,24 +128,22 @@ M.edit_files = function(opts)
     bufnr, winnr = open(files, argv, stdin_buf, guest_cwd)
     if winnr == nil and bufnr ~= nil then winnr = vim.fn.bufwinid(bufnr) end
   elseif type(open) == "string" then
-    local focus = vim.fn.argv(focus_first and 0 or (#files - 1))
+    local focus = focus_first and files[1] or files[#files]
     -- If there's an stdin buf, focus that
-    if stdin_buf then focus = vim.api.nvim_buf_get_name(stdin_buf) end
-    if open == "current" then
-      vim.cmd("edit " .. focus)
-    elseif open == "alternate" then
+    if stdin_buf then focus = stdin_buf end
+    if open == "alternate" then
       winnr = vim.fn.win_getid(vim.fn.winnr("#"))
-      vim.api.nvim_win_set_buf(winnr, vim.fn.bufnr(focus))
       vim.api.nvim_set_current_win(winnr)
     elseif open == "split" then
-      vim.cmd("split " .. focus)
+      vim.cmd.split()
     elseif open == "vsplit" then
-      vim.cmd("vsplit " .. focus)
+      vim.cmd.vsplit()
     else
-      vim.cmd("tabedit " .. focus)
+      vim.cmd.tabnew()
     end
+    vim.api.nvim_set_current_buf(focus.bufnr)
     winnr = vim.api.nvim_get_current_win()
-    bufnr = vim.api.nvim_get_current_buf()
+    bufnr = focus.bufnr
   else
     vim.api.nvim_err_writeln(
       "Flatten: 'config.open.focus' expects a function or string, got "
