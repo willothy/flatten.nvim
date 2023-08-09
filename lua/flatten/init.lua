@@ -18,13 +18,13 @@ M.default_pipe_path = function()
   if vim.env.NVIM then return vim.env.NVIM end
   -- If running in a Kitty terminal,
   -- all tabs/windows/os-windows in the same instance of kitty will open in the first neovim instance
-  if vim.env.KITTY_PID and M.config.one_per.kitty then
+  if M.config.one_per.kitty and vim.env.KITTY_PID then
     local ret = M.try_address("kitty.nvim-" .. vim.env.KITTY_PID, true)
     if ret ~= nil then return ret end
   end
   -- If running in a Wezterm,
   -- all tabs/windows/windows in the same instance of wezterm will open in the first neovim instance
-  if vim.env.WEZTERM_UNIX_SOCKET and M.config.one_per.wezterm then
+  if M.config.one_per.wezterm and vim.env.WEZTERM_UNIX_SOCKET then
     local pid = vim.env.WEZTERM_UNIX_SOCKET:match("gui%-sock%-(%d+)")
     local ret = M.try_address("wezterm.nvim-" .. pid, true)
     if ret ~= nil then return ret end
@@ -35,25 +35,37 @@ end
 M.config = {
   callbacks = {
     ---@param argv table a list of all the arguments in the nested session
+    ---@return boolean
     should_block = function(argv)
       return false
     end,
     pre_open = function() end,
+    ---@param bufnr buffer
+    ---@param winnr window
+    ---@param filetype string
+    ---@param is_blocking boolean
     post_open = function(bufnr, winnr, filetype, is_blocking) end,
+    ---@param filetype string
     block_end = function(filetype) end,
   },
   allow_cmd_passthrough = true,
   ---Allow a nested session to open when nvim is
   ---executed without any args
   nest_if_no_args = false,
+  ---@type table<string, boolean>
   block_for = {
     gitcommit = true,
   },
   window = {
+    ---@alias BufInfo { fname: string, bufnr: buffer }
+    ---@type "current" | "alternate" | "split" | "vsplit" | "tab" | fun(files: BufInfo[], arv: string[], stdin_buf: BufInfo, guest_cwd: string):window, buffer
     open = "current",
+    ---@type "first" | "last"
     focus = "first",
   },
   one_per = { kitty = true, wezterm = true },
+  ---@type string | fun():(string|nil)
+  ---Return nil to allow nesting
   pipe_path = M.default_pipe_path,
 }
 
