@@ -63,7 +63,7 @@ function M.default_should_nest(host)
     return false
   end
 
-  return host_cwd ~= vim.fn.getcwd(-1)
+  return not vim.startswith(vim.fn.getcwd(-1), host_cwd)
 end
 
 -- selene: allow(unused_variable)
