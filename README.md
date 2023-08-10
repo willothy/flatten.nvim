@@ -12,6 +12,7 @@ Flatten allows you to open files from a neovim terminal buffer in your current n
 - [x] Pipe from terminal into a new Neovim buffer ([demo](https://user-images.githubusercontent.com/38540736/225779817-ed7efea8-9108-4f28-983f-1a889d32826f.mp4))
 - [x] Setting to force blocking from the commandline, regardless of filetype
 - [x] Command passthrough from guest to host
+- [x] Flatten instances from wezterm and kitty tabs/panes based on working directory
 
 ## Plans and Ideas
 
@@ -20,7 +21,6 @@ Ideas:
 - [ ] Multi-screen support
   - [ ] Move buffers between Neovim instances in separate windows
   - [ ] Single cursor between Neovim instances in separate windows
-- [ ] Flatten instances based on working directory
 
 If you have an idea or feature request, open an issue with the `enhancement` tag!
 
@@ -71,6 +71,9 @@ nvim file1 file2
 # force blocking for a file
 nvim --cmd 'let g:flatten_wait=1' file1
 
+# open files in diff mode
+nvim -d file1 file2
+
 # enable blocking for $VISUAL
 # allows edit-exec
 # in your .bashrc, .zshrc, etc.
@@ -93,6 +96,20 @@ nvim +<cmd>
 Flatten comes with the following defaults:
 
 ```lua
+---Types:
+--
+-- Passed to callbacks that handle opening files
+---@alias BufInfo { fname: string, bufnr: buffer }
+--
+-- The first argument is a list of BufInfo tables representing the newly opened files.
+-- The third argument is a single BufInfo table, only provided when a buffer is created from stdin.
+--
+-- IMPORTANT: For `block_for` to work, you need to return a buffer number OR a buffer number and a window number.
+--            The `winnr` return value is not required, `vim.fn.bufwinid(bufnr)` is used if it is not provided.
+--            The `filetype` of this buffer will determine whether block should happen or not.
+--
+---@alias OpenHandler fun(files: BufInfo[], argv: string[], stdin_buf: BufInfo, guest_cwd: string):window, buffer
+--
 {
     callbacks = {
         ---@param argv table a list of all the arguments in the nested session
@@ -125,14 +142,16 @@ Flatten comes with the following defaults:
         -- split          -> open in split
         -- vsplit         -> open in vsplit
         -- smart          -> smart open (avoids special buffers)
-        -- function(new_file_names, argv, stdin_buf_id, guest_cwd) -> bufnr, winnr?
-        -- Only open the files, allowing you to handle window opening yourself.
-        -- The first argument is an array of file names representing the newly opened files.
-        -- The third argument is only provided when a buffer is created from stdin.
-        -- IMPORTANT: For `block_for` to work, you need to return a buffer number OR a buffer number and a window number.
-        --            The `winnr` return value is not required, `vim.fn.bufwinid(bufnr)` is used if it is not provided.
-        --            The `filetype` of this buffer will determine whether block should happen or not.
+        -- OpenHandler    -> allows you to handle file opening yourself (see Types)
+        --
         open = "current",
+        -- Options:
+        -- vsplit         -> opens files in diff vsplits
+        -- split          -> opens files in diff splits
+        -- tab_vsplit     -> creates a new tabpage, and opens diff vsplits
+        -- tab_split      -> creates a new tabpage, and opens diff splits
+        -- OpenHandler    -> allows you to handle file opening yourself (see Types)
+        diff = "tab_vsplit",
         -- Affects which file gets focused when opening multiple at once
         -- Options:
         -- "first"        -> open first file of new files (default)

@@ -81,6 +81,9 @@ function M.is_guest()
   return is_guest
 end
 
+---@alias Flatten.BufInfo { fname: string, bufnr: buffer }
+---@alias Flatten.OpenHandler fun(files: Flatten.BufInfo[], argv: string[], stdin_buf: Flatten.BufInfo, guest_cwd: string):window, buffer
+
 -- selene: allow(unused_variable)
 M.config = {
   callbacks = {
@@ -111,9 +114,10 @@ M.config = {
     gitrebase = true,
   },
   window = {
-    ---@alias Flatten.BufInfo { fname: string, bufnr: buffer }
-    ---@type "current" | "alternate" | "split" | "vsplit" | "tab" | "smart" | fun(files: Flatten.BufInfo[], arv: string[], stdin_buf: Flatten.BufInfo, guest_cwd: string):window, buffer
+    ---@type "current" | "alternate" | "split" | "vsplit" | "tab" | "smart" | Flatten.OpenHandler
     open = "current",
+    ---@type "split" | "vsplit" | "tab_split" | "tab_vsplit" | Flatten.OpenHandler
+    diff = "tab_vsplit",
     ---@type "first" | "last"
     focus = "first",
   },

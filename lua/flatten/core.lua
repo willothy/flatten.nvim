@@ -177,23 +177,45 @@ M.edit_files = function(opts)
   local is_diff = vim.tbl_contains(argv, "-d")
 
   if is_diff then
-    winnr = M.smart_open()
-    vim.api.nvim_set_current_win(winnr)
+    local diff_open = config.window.diff
+    if type(diff_open) == "function" then
+      winnr, bufnr = config.window.diff(files, argv, stdin_buf, guest_cwd)
+    else
+      winnr = M.smart_open()
+      vim.api.nvim_set_current_win(winnr)
 
-    if stdin_buf then
-      files = vim.list_extend({ stdin_buf }, files)
-    end
-    for i, file in ipairs(files) do
-      if i == 1 then
-        vim.api.nvim_set_current_buf(file.bufnr)
-      else
-        vim.cmd.vsplit(file.fname)
-        vim.cmd.diffthis()
+      if stdin_buf then
+        files = vim.list_extend({ stdin_buf }, files)
+      end
+      local tab = false
+      local vert = false
+
+      if diff_open == "tab_split" or diff_open == "tab_vsplit" then
+        tab = true
+      end
+      if diff_open == "vsplit" or diff_open == "tab_vsplit" then
+        vert = true
+      end
+
+      if tab then
+        vim.cmd.tabnew()
+      end
+      for i, file in ipairs(files) do
+        if i == 1 then
+          vim.api.nvim_set_current_buf(file.bufnr)
+        else
+          if vert then
+            vim.cmd.vsplit(file.fname)
+          else
+            vim.cmd.split(file.fname)
+          end
+          vim.cmd.diffthis()
+        end
       end
     end
 
-    winnr = vim.api.nvim_get_current_win()
-    bufnr = vim.api.nvim_get_current_buf()
+    winnr = winnr or vim.api.nvim_get_current_win()
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
   elseif type(open) == "function" then
     bufnr, winnr = open(files, argv, stdin_buf, guest_cwd)
     if winnr == nil and bufnr ~= nil then
