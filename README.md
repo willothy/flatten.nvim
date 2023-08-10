@@ -124,6 +124,7 @@ Flatten comes with the following defaults:
         -- tab            -> open in new tab
         -- split          -> open in split
         -- vsplit         -> open in vsplit
+        -- smart          -> smart open (avoids special buffers)
         -- function(new_file_names, argv, stdin_buf_id, guest_cwd) -> bufnr, winnr?
         -- Only open the files, allowing you to handle window opening yourself.
         -- The first argument is an array of file names representing the newly opened files.

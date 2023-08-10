@@ -57,8 +57,8 @@ M.config = {
     gitcommit = true,
   },
   window = {
-    ---@alias BufInfo { fname: string, bufnr: buffer }
-    ---@type "current" | "alternate" | "split" | "vsplit" | "tab" | fun(files: BufInfo[], arv: string[], stdin_buf: BufInfo, guest_cwd: string):window, buffer
+    ---@alias Flatten.BufInfo { fname: string, bufnr: buffer }
+    ---@type "current" | "alternate" | "split" | "vsplit" | "tab" | "smart" | fun(files: Flatten.BufInfo[], arv: string[], stdin_buf: Flatten.BufInfo, guest_cwd: string):window, buffer
     open = "current",
     ---@type "first" | "last"
     focus = "first",
