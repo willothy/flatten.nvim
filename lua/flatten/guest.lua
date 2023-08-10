@@ -108,7 +108,7 @@ M.init = function(host_pipe)
         return result
       end
       files = filter_map(vim.api.nvim_list_bufs(), function(buffer)
-        if not vim.api.nvim_buf_is_loaded(buffer) then
+        if not vim.api.nvim_buf_is_valid(buffer) then
           return
         end
         local buftype = vim.api.nvim_buf_get_option(buffer, "buftype")

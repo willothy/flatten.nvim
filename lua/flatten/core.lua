@@ -26,8 +26,6 @@ end
 
 ---@param focus Flatten.BufInfo
 function M.smart_open(focus)
-  local bufnr = focus.bufnr
-
   local curwin = vim.api.nvim_get_current_win()
   local available_wins = vim
     .iter(vim.api.nvim_list_wins())
@@ -40,7 +38,7 @@ function M.smart_open(focus)
       end
 
       local winbuf = vim.api.nvim_win_get_buf(win)
-      return vim.bo[winbuf].buftype == "" and vim.bo[winbuf].buflisted
+      return vim.bo[winbuf].buftype == ""
     end)
     :fold({}, function(set, win)
       set[win] = true
@@ -50,29 +48,33 @@ function M.smart_open(focus)
   local layout = vim.fn.winlayout()
 
   -- traverse the window tree to find the first available window
-  local queue = { layout }
+  local stack = { layout }
   local win
 
-  while #queue > 0 do
-    local node = table.remove(queue, 1)
+  while #stack > 0 do
+    local node = table.remove(stack)
     if node[1] == "leaf" then
       if available_wins[node[2]] then
         win = node[2]
         break
       end
     else
-      for _, child in ipairs(node[2]) do
-        table.insert(queue, child)
+      for i = #node[2], 1, -1 do
+        table.insert(stack, node[2][i])
       end
     end
   end
 
+  if not focus then
+    return win
+  end
+
   if win then
-    vim.api.nvim_win_set_buf(win, bufnr)
+    vim.api.nvim_win_set_buf(win, focus.bufnr)
     vim.api.nvim_set_current_win(win)
   else
     vim.cmd("split")
-    vim.api.nvim_win_set_buf(0, bufnr)
+    vim.api.nvim_win_set_buf(0, focus.bufnr)
   end
 end
 
@@ -175,8 +177,27 @@ M.edit_files = function(opts)
   local winnr
   local bufnr
 
-  -- Open window
-  if type(open) == "function" then
+  local is_diff = vim.tbl_contains(argv, "-d")
+
+  if is_diff then
+    winnr = M.smart_open()
+    vim.api.nvim_set_current_win(winnr)
+
+    if stdin_buf then
+      files = vim.list_extend({ stdin_buf }, files)
+    end
+    for i, file in ipairs(files) do
+      if i == 1 then
+        vim.api.nvim_set_current_buf(file.bufnr)
+      else
+        vim.cmd.vsplit(file.fname)
+        vim.cmd.diffthis()
+      end
+    end
+
+    winnr = vim.api.nvim_get_current_win()
+    bufnr = vim.api.nvim_get_current_buf()
+  elseif type(open) == "function" then
     bufnr, winnr = open(files, argv, stdin_buf, guest_cwd)
     if winnr == nil and bufnr ~= nil then
       winnr = vim.fn.bufwinid(bufnr)
