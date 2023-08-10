@@ -81,6 +81,9 @@ function M.is_guest()
   return is_guest
 end
 
+---@alias Flatten.BufInfo { fname: string, bufnr: buffer }
+---@alias Flatten.OpenHandler fun(files: Flatten.BufInfo[], argv: string[], stdin_buf: Flatten.BufInfo, guest_cwd: string):window, buffer
+
 -- selene: allow(unused_variable)
 M.config = {
   callbacks = {
@@ -100,7 +103,8 @@ M.config = {
     ---@param winnr window
     ---@param filetype string
     ---@param is_blocking boolean
-    post_open = function(bufnr, winnr, filetype, is_blocking) end,
+    ---@param is_diff boolean
+    post_open = function(bufnr, winnr, filetype, is_blocking, is_diff) end,
     ---Called when a nested session is done waiting for the host.
     ---@param filetype string
     block_end = function(filetype) end,
@@ -111,9 +115,10 @@ M.config = {
     gitrebase = true,
   },
   window = {
-    ---@alias Flatten.BufInfo { fname: string, bufnr: buffer }
-    ---@type "current" | "alternate" | "split" | "vsplit" | "tab" | "smart" | fun(files: Flatten.BufInfo[], arv: string[], stdin_buf: Flatten.BufInfo, guest_cwd: string):window, buffer
+    ---@type "current" | "alternate" | "split" | "vsplit" | "tab" | "smart" | Flatten.OpenHandler
     open = "current",
+    ---@type "split" | "vsplit" | "tab_split" | "tab_vsplit" | Flatten.OpenHandler
+    diff = "tab_vsplit",
     ---@type "first" | "last"
     focus = "first",
   },

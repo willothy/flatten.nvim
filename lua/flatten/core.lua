@@ -26,53 +26,52 @@ end
 
 ---@param focus Flatten.BufInfo
 function M.smart_open(focus)
-  local bufnr = focus.bufnr
-
   local curwin = vim.api.nvim_get_current_win()
-  local available_wins = vim
-    .iter(vim.api.nvim_list_wins())
-    :filter(function(win)
-      if win == curwin then
-        return false
-      end
-      if vim.api.nvim_win_get_config(win).zindex ~= nil then
-        return false
-      end
 
-      local winbuf = vim.api.nvim_win_get_buf(win)
-      return vim.bo[winbuf].buftype == "" and vim.bo[winbuf].buflisted
-    end)
-    :fold({}, function(set, win)
-      set[win] = true
-      return set
-    end)
+  -- set of valid target windows
+  local valid_targets = {}
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local win_buf = vim.api.nvim_win_get_buf(win)
+    if
+      win ~= curwin
+      and vim.api.nvim_win_get_config(win).zindex == nil
+      and vim.bo[win_buf].buftype == ""
+    then
+      valid_targets[win] = true
+    end
+  end
 
   local layout = vim.fn.winlayout()
 
   -- traverse the window tree to find the first available window
-  local queue = { layout }
+  local stack = { layout }
   local win
 
-  while #queue > 0 do
-    local node = table.remove(queue, 1)
+  while #stack > 0 do
+    local node = table.remove(stack)
     if node[1] == "leaf" then
-      if available_wins[node[2]] then
+      if valid_targets[node[2]] then
         win = node[2]
         break
       end
     else
-      for _, child in ipairs(node[2]) do
-        table.insert(queue, child)
+      for i = #node[2], 1, -1 do
+        table.insert(stack, node[2][i])
       end
     end
   end
 
+  -- allows using this function as a utility to get a window to open something in
+  if not focus then
+    return win
+  end
+
   if win then
-    vim.api.nvim_win_set_buf(win, bufnr)
+    vim.api.nvim_win_set_buf(win, focus.bufnr)
     vim.api.nvim_set_current_win(win)
   else
     vim.cmd("split")
-    vim.api.nvim_win_set_buf(0, bufnr)
+    vim.api.nvim_win_set_buf(0, focus.bufnr)
   end
 end
 
@@ -175,8 +174,50 @@ M.edit_files = function(opts)
   local winnr
   local bufnr
 
-  -- Open window
-  if type(open) == "function" then
+  local is_diff = vim.tbl_contains(argv, "-d")
+
+  if is_diff then
+    local diff_open = config.window.diff
+    if type(diff_open) == "function" then
+      winnr, bufnr = config.window.diff(files, argv, stdin_buf, guest_cwd)
+    else
+      winnr = M.smart_open()
+      vim.api.nvim_set_current_win(winnr)
+
+      if stdin_buf then
+        files = vim.list_extend({ stdin_buf }, files)
+      end
+      local tab = false
+      local vert = false
+
+      if diff_open == "tab_split" or diff_open == "tab_vsplit" then
+        tab = true
+      end
+      if diff_open == "vsplit" or diff_open == "tab_vsplit" then
+        vert = true
+      end
+
+      for i, file in ipairs(files) do
+        if i == 1 then
+          if tab then
+            vim.cmd.tabedit(file.fname)
+          else
+            vim.api.nvim_set_current_buf(file.bufnr)
+          end
+        else
+          if vert then
+            vim.cmd.vsplit(file.fname)
+          else
+            vim.cmd.split(file.fname)
+          end
+        end
+        vim.cmd.diffthis()
+      end
+    end
+
+    winnr = winnr or vim.api.nvim_get_current_win()
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+  elseif type(open) == "function" then
     bufnr, winnr = open(files, argv, stdin_buf, guest_cwd)
     if winnr == nil and bufnr ~= nil then
       winnr = vim.fn.bufwinid(bufnr)
@@ -225,7 +266,7 @@ M.edit_files = function(opts)
     end
   end
 
-  callbacks.post_open(bufnr, winnr, ft, block)
+  callbacks.post_open(bufnr, winnr, ft, block, is_diff)
 
   if block then
     M.augroup = vim.api.nvim_create_augroup("flatten_notify", { clear = true })
