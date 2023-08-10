@@ -8,29 +8,39 @@ function M.try_address(addr, startserver)
   end
   if vim.loop.fs_stat(addr) then
     local ok, sock = require("flatten.guest").sockconnect(addr)
-    if ok then return sock end
+    if ok then
+      return sock
+    end
   elseif startserver then
     local ok = pcall(vim.fn.serverstart, addr)
-    if ok then return addr end
+    if ok then
+      return addr
+    end
   end
 end
 
 ---@return string | nil
 function M.default_pipe_path()
   -- If running in a terminal inside Neovim:
-  if vim.env.NVIM then return vim.env.NVIM end
+  if vim.env.NVIM then
+    return vim.env.NVIM
+  end
   -- If running in a Kitty terminal,
   -- all tabs/windows/os-windows in the same instance of kitty will open in the first neovim instance
   if M.config.one_per.kitty and vim.env.KITTY_PID then
     local ret = M.try_address("kitty.nvim-" .. vim.env.KITTY_PID, true)
-    if ret ~= nil then return ret end
+    if ret ~= nil then
+      return ret
+    end
   end
   -- If running in a Wezterm,
   -- all tabs/windows/windows in the same instance of wezterm will open in the first neovim instance
   if M.config.one_per.wezterm and vim.env.WEZTERM_UNIX_SOCKET then
     local pid = vim.env.WEZTERM_UNIX_SOCKET:match("gui%-sock%-(%d+)")
     local ret = M.try_address("wezterm.nvim-" .. pid, true)
-    if ret ~= nil then return ret end
+    if ret ~= nil then
+      return ret
+    end
   end
 end
 
@@ -38,7 +48,9 @@ end
 ---@return boolean
 function M.default_should_nest(host)
   -- don't nest in a neovim terminal (unless nest_if_no_args is set)
-  if vim.env.NVIM ~= nil then return false end
+  if vim.env.NVIM ~= nil then
+    return false
+  end
 
   -- If in a wezterm or kitty split, only open files in the first neovim instance
   -- if their working directories are the same.
@@ -47,7 +59,9 @@ function M.default_should_nest(host)
   local ok, host_cwd = pcall(vim.fn.rpcrequest, host, "nvim_exec_lua", call, {})
 
   -- Yield to default behavior if RPC call fails
-  if not ok then return false end
+  if not ok then
+    return false
+  end
 
   return host_cwd ~= vim.fn.getcwd(-1)
 end
@@ -119,7 +133,9 @@ M.setup = function(opt)
   M.config = vim.tbl_deep_extend("keep", opt or {}, M.config)
 
   local pipe_path = M.config.pipe_path
-  if type(pipe_path) == "function" then pipe_path = pipe_path() end
+  if type(pipe_path) == "function" then
+    pipe_path = pipe_path()
+  end
 
   if
     pipe_path == nil or vim.tbl_contains(vim.fn.serverlist(), pipe_path, {})
