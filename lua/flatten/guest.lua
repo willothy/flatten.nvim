@@ -17,7 +17,9 @@ function M.exec_on_host(call, opts)
 end
 
 function M.maybe_block(block)
-  if not block then vim.cmd.qa({ bang = true }) end
+  if not block then
+    vim.cmd.qa({ bang = true })
+  end
   vim.fn.chanclose(host)
   while true do
     vim.cmd.sleep(1)
@@ -25,7 +27,9 @@ function M.maybe_block(block)
 end
 
 local function send_files(files, stdin)
-  if #files < 1 and #stdin < 1 then return end
+  if #files < 1 and #stdin < 1 then
+    return
+  end
 
   local force_block = vim.g.flatten_wait ~= nil
     or config.callbacks.should_block(vim.v.argv)
@@ -68,7 +72,9 @@ M.init = function(host_pipe)
     local ok
     ok, host = M.sockconnect(host_pipe)
     -- Return on connection error
-    if not ok then return end
+    if not ok then
+      return
+    end
   end
 
   if config.callbacks.should_nest and config.callbacks.should_nest(host) then
@@ -95,14 +101,20 @@ M.init = function(host_pipe)
         local result = {}
         for _, v in ipairs(tbl) do
           local r = f(v)
-          if r ~= nil then table.insert(result, r) end
+          if r ~= nil then
+            table.insert(result, r)
+          end
         end
         return result
       end
       files = filter_map(vim.api.nvim_list_bufs(), function(buffer)
-        if not vim.api.nvim_buf_is_loaded(buffer) then return end
+        if not vim.api.nvim_buf_is_loaded(buffer) then
+          return
+        end
         local buftype = vim.api.nvim_buf_get_option(buffer, "buftype")
-        if buftype ~= "" and buftype ~= "acwrite" then return end
+        if buftype ~= "" and buftype ~= "acwrite" then
+          return
+        end
         local name = vim.api.nvim_buf_get_name(buffer)
         if name ~= "" and vim.api.nvim_buf_get_option(buffer, "buflisted") then
           return name
@@ -126,7 +138,9 @@ M.init = function(host_pipe)
             should_block = result.should_block
           end
         end
-        if should_nest == true then return end
+        if should_nest == true then
+          return
+        end
         M.maybe_block(should_block)
       end
 

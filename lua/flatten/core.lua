@@ -32,11 +32,15 @@ function M.smart_open(focus)
   local available_wins = vim
     .iter(vim.api.nvim_list_wins())
     :filter(function(win)
-      if win == curwin then return false end
-      if vim.api.nvim_win_get_config(win).zindex ~= nil then return false end
+      if win == curwin then
+        return false
+      end
+      if vim.api.nvim_win_get_config(win).zindex ~= nil then
+        return false
+      end
 
       local winbuf = vim.api.nvim_win_get_buf(win)
-      return vim.bo[winbuf].buftype == "" and vim.bo[winbuf].buflisted == true
+      return vim.bo[winbuf].buftype == "" and vim.bo[winbuf].buflisted
     end)
     :fold({}, function(set, win)
       set[win] = true
@@ -174,11 +178,15 @@ M.edit_files = function(opts)
   -- Open window
   if type(open) == "function" then
     bufnr, winnr = open(files, argv, stdin_buf, guest_cwd)
-    if winnr == nil and bufnr ~= nil then winnr = vim.fn.bufwinid(bufnr) end
+    if winnr == nil and bufnr ~= nil then
+      winnr = vim.fn.bufwinid(bufnr)
+    end
   elseif type(open) == "string" then
     local focus = focus_first and files[1] or files[#files]
     -- If there's an stdin buf, focus that
-    if stdin_buf then focus = stdin_buf end
+    if stdin_buf then
+      focus = stdin_buf
+    end
     if open == "smart" then
       M.smart_open(focus)
     elseif open == "alternate" then
@@ -203,7 +211,9 @@ M.edit_files = function(opts)
   end
 
   local ft
-  if bufnr ~= nil then ft = vim.api.nvim_buf_get_option(bufnr, "filetype") end
+  if bufnr ~= nil then
+    ft = vim.api.nvim_buf_get_option(bufnr, "filetype")
+  end
 
   local block = config.block_for[ft] or force_block
 
