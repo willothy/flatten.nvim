@@ -112,18 +112,27 @@ Flatten comes with the following defaults:
 --
 {
     callbacks = {
+        ---Called to determine if a nested session should wait for the host to close the file.
         ---@param argv table a list of all the arguments in the nested session
-        should_block = function(argv)
-          return false
-        end,
-        -- Called when a request to edit file(s) is received
+        ---@return boolean
+        should_block = require("flatten").default_should_block,
+        ---If this returns true, the nested session will be opened.
+        ---If false, default behavior is used, and
+        ---config.nest_if_no_args is respected.
+        ---@type fun(host: channel):boolean
+        should_nest = require("flatten").default_should_nest,
+        ---Called before a nested session is opened.
         pre_open = function() end,
-        -- Called after a file is opened
-        -- Passed the buf id, win id, and filetype of the new window
+        ---Called after a nested session is opened.
+        ---@param bufnr buffer
+        ---@param winnr window
+        ---@param filetype string
+        ---@param is_blocking boolean
+        ---@param is_diff boolean
         post_open = function(bufnr, winnr, filetype, is_blocking, is_diff) end,
-        -- Called when a file is open in blocking mode, after it's done blocking
-        -- (after bufdelete, bufunload, or quitpre for the blocking buffer)
-        block_end = function() end,
+        ---Called when a nested session is done waiting for the host.
+        ---@param filetype string
+        block_end = function(filetype) end,
     },
     -- <String, Bool> dictionary of filetypes that should be blocking
     block_for = {
