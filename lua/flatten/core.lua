@@ -34,7 +34,7 @@ function M.smart_open(focus)
     local win_buf = vim.api.nvim_win_get_buf(win)
     if
       win ~= curwin
-      and vim.api.nvim_get_config(win).zindex == nil
+      and vim.api.nvim_win_get_config(win).zindex == nil
       and vim.bo[win_buf].buftype == ""
     then
       valid_targets[win] = true
