@@ -81,7 +81,18 @@ function M.is_guest()
   return is_guest
 end
 
+-- Types:
+--
+-- Passed to callbacks that handle opening files
 ---@alias Flatten.BufInfo { fname: string, bufnr: buffer }
+--
+-- The first argument is a list of BufInfo tables representing the newly opened files.
+-- The third argument is a single BufInfo table, only provided when a buffer is created from stdin.
+--
+-- IMPORTANT: For `block_for` to work, you need to return a buffer number OR a buffer number and a window number.
+--            The `winnr` return value is not required, `vim.fn.bufwinid(bufnr)` is used if it is not provided.
+--            The `filetype` of this buffer will determine whether block should happen or not.
+--
 ---@alias Flatten.OpenHandler fun(files: Flatten.BufInfo[], argv: string[], stdin_buf: Flatten.BufInfo, guest_cwd: string):window, buffer
 
 -- selene: allow(unused_variable)
@@ -109,6 +120,7 @@ M.config = {
     ---@param filetype string
     block_end = function(filetype) end,
   },
+  ---Specify blocking by filetype
   ---@type table<string, boolean>
   block_for = {
     gitcommit = true,
