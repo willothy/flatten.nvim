@@ -26,15 +26,12 @@ end
 
 ---@param focus Flatten.BufInfo
 function M.smart_open(focus)
-  local curwin = vim.api.nvim_get_current_win()
-
   -- set of valid target windows
   local valid_targets = {}
   for _, win in ipairs(vim.api.nvim_list_wins()) do
     local win_buf = vim.api.nvim_win_get_buf(win)
     if
-      win ~= curwin
-      and vim.api.nvim_win_get_config(win).zindex == nil
+      vim.api.nvim_win_get_config(win).zindex == nil
       and vim.bo[win_buf].buftype == ""
     then
       valid_targets[win] = true
