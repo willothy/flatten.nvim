@@ -1,6 +1,8 @@
 local M = {}
 
-M.try_address = function(addr, startserver)
+---@param addr string
+---@param startserver boolean
+function M.try_address(addr, startserver)
   if not addr:find("/") then
     addr = ("%s/%s"):format(vim.fn.stdpath("run"), addr)
   end
@@ -13,7 +15,8 @@ M.try_address = function(addr, startserver)
   end
 end
 
-M.default_pipe_path = function()
+---@return string | nil
+function M.default_pipe_path()
   -- If running in a terminal inside Neovim:
   if vim.env.NVIM then return vim.env.NVIM end
   -- If running in a Kitty terminal,
@@ -31,30 +34,67 @@ M.default_pipe_path = function()
   end
 end
 
+---@param host channel
+---@return boolean
+function M.default_should_nest(host)
+  -- don't nest in a neovim terminal (unless nest_if_no_args is set)
+  if vim.env.NVIM ~= nil then return false end
+
+  -- If in a wezterm or kitty split, only open files in the first neovim instance
+  -- if their working directories are the same.
+  -- This allows you to open a new instance in a different cwd, but open files from the active cwd in your current session.
+  local call = "return vim.fn.getcwd(-1)"
+  local ok, host_cwd = pcall(vim.fn.rpcrequest, host, "nvim_exec_lua", call, {})
+
+  -- Yield to default behavior if RPC call fails
+  if not ok then return false end
+
+  return host_cwd ~= vim.fn.getcwd(-1)
+end
+
+-- selene: allow(unused_variable)
+
+---@param argv table
+---@return boolean
+function M.default_should_block(argv)
+  return false
+end
+
+local is_guest
+---@return boolean | nil
+---Returns true if in guest, false if in host, and nil if flatten has not yet been initialized.
+function M.is_guest()
+  return is_guest
+end
+
 -- selene: allow(unused_variable)
 M.config = {
   callbacks = {
+    ---Called to determine if a nested session should wait for the host to close the file.
     ---@param argv table a list of all the arguments in the nested session
     ---@return boolean
-    should_block = function(argv)
-      return false
-    end,
+    should_block = M.default_should_block,
+    ---If this returns true, the nested session will be opened.
+    ---If false, default behavior is used, and
+    ---config.nest_if_no_args is respected.
+    ---@type fun(host: channel):boolean
+    should_nest = M.default_should_nest,
+    ---Called before a nested session is opened.
     pre_open = function() end,
+    ---Called after a nested session is opened.
     ---@param bufnr buffer
     ---@param winnr window
     ---@param filetype string
     ---@param is_blocking boolean
     post_open = function(bufnr, winnr, filetype, is_blocking) end,
+    ---Called when a nested session is done waiting for the host.
     ---@param filetype string
     block_end = function(filetype) end,
   },
-  allow_cmd_passthrough = true,
-  ---Allow a nested session to open when nvim is
-  ---executed without any args
-  nest_if_no_args = false,
   ---@type table<string, boolean>
   block_for = {
     gitcommit = true,
+    gitrebase = true,
   },
   window = {
     ---@alias Flatten.BufInfo { fname: string, bufnr: buffer }
@@ -65,16 +105,15 @@ M.config = {
   },
   one_per = { kitty = true, wezterm = true },
   ---@type string | fun():(string|nil)
-  ---Return nil to allow nesting
   pipe_path = M.default_pipe_path,
+  ---Allow commands to be passed to nvim remotely via +... or --cmd ...
+  ---@type boolean
+  allow_cmd_passthrough = true,
+  ---Allow a nested session to open when nvim is
+  ---executed without any args
+  ---@type boolean
+  nest_if_no_args = false,
 }
-
-local is_guest
----@return boolean | nil
----Returns true if in guest, false if in host, and nil if flatten has not yet been initialized.
-function M.is_guest()
-  return is_guest
-end
 
 M.setup = function(opt)
   M.config = vim.tbl_deep_extend("keep", opt or {}, M.config)

@@ -1,5 +1,7 @@
 local M = {}
 
+local config = require("flatten").config
+
 local host
 
 local function is_windows()
@@ -25,7 +27,6 @@ end
 local function send_files(files, stdin)
   if #files < 1 and #stdin < 1 then return end
 
-  local config = require("flatten").config
   local force_block = vim.g.flatten_wait ~= nil
     or config.callbacks.should_block(vim.v.argv)
 
@@ -70,6 +71,10 @@ M.init = function(host_pipe)
     if not ok then return end
   end
 
+  if config.callbacks.should_nest and config.callbacks.should_nest(host) then
+    return
+  end
+
   -- Get new files
   local files = vim.fn.argv()
   local nfiles = #files
@@ -108,7 +113,6 @@ M.init = function(host_pipe)
       -- No arguments, user is probably opening a nested session intentionally
       -- Or only piping input from stdin
       if nfiles < 1 then
-        local config = require("flatten").config
         local should_nest, should_block = config.nest_if_no_args, false
 
         if config.callbacks.no_files then
