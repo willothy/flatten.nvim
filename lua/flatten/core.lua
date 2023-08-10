@@ -1,6 +1,6 @@
 local M = {}
 
-local function unblock_guest(guest_pipe)
+function M.unblock_guest(guest_pipe)
   local response_sock = vim.fn.sockconnect("pipe", guest_pipe, { rpc = true })
   vim.fn.rpcnotify(
     response_sock,
@@ -11,17 +11,65 @@ local function unblock_guest(guest_pipe)
   vim.fn.chanclose(response_sock)
 end
 
-local function notify_when_done(pipe, bufnr, callback, ft)
+function M.notify_when_done(pipe, bufnr, callback, ft)
   vim.api.nvim_create_autocmd({ "QuitPre", "BufUnload", "BufDelete" }, {
     buffer = bufnr,
     once = true,
     group = M.augroup,
     callback = function()
       vim.api.nvim_del_augroup_by_id(M.augroup)
-      unblock_guest(pipe)
+      M.unblock_guest(pipe)
       callback(ft)
     end,
   })
+end
+
+---@param focus Flatten.BufInfo
+function M.smart_open(focus)
+  local bufnr = focus.bufnr
+
+  local curwin = vim.api.nvim_get_current_win()
+  local available_wins = vim
+    .iter(vim.api.nvim_list_wins())
+    :filter(function(win)
+      if win == curwin then return false end
+      if vim.api.nvim_win_get_config(win).zindex ~= nil then return false end
+
+      local winbuf = vim.api.nvim_win_get_buf(win)
+      return vim.bo[winbuf].buftype == "" and vim.bo[winbuf].buflisted == true
+    end)
+    :fold({}, function(set, win)
+      set[win] = true
+      return set
+    end)
+
+  local layout = vim.fn.winlayout()
+
+  -- traverse the window tree to find the first available window
+  local queue = { layout }
+  local win
+
+  while #queue > 0 do
+    local node = table.remove(queue, 1)
+    if node[1] == "leaf" then
+      if available_wins[node[2]] then
+        win = node[2]
+        break
+      end
+    else
+      for _, child in ipairs(node[2]) do
+        table.insert(queue, child)
+      end
+    end
+  end
+
+  if win then
+    vim.api.nvim_win_set_buf(win, bufnr)
+    vim.api.nvim_set_current_win(win)
+  else
+    vim.cmd("split")
+    vim.api.nvim_win_set_buf(0, bufnr)
+  end
 end
 
 ---@class EditFilesOptions
@@ -131,7 +179,9 @@ M.edit_files = function(opts)
     local focus = focus_first and files[1] or files[#files]
     -- If there's an stdin buf, focus that
     if stdin_buf then focus = stdin_buf end
-    if open == "alternate" then
+    if open == "smart" then
+      M.smart_open(focus)
+    elseif open == "alternate" then
       winnr = vim.fn.win_getid(vim.fn.winnr("#"))
       vim.api.nvim_set_current_win(winnr)
     elseif open == "split" then
@@ -169,7 +219,7 @@ M.edit_files = function(opts)
 
   if block then
     M.augroup = vim.api.nvim_create_augroup("flatten_notify", { clear = true })
-    notify_when_done(response_pipe, bufnr, callbacks.block_end, ft)
+    M.notify_when_done(response_pipe, bufnr, callbacks.block_end, ft)
   end
   return block
 end
