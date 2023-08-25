@@ -147,6 +147,7 @@ M.edit_files = function(opts)
           buf = file.bufnr,
         })
       else
+        ---@diagnostic disable-next-line: redundant-parameter
         vim.api.nvim_buf_set_option(file.bufnr, "buflisted", true)
       end
 
@@ -168,7 +169,9 @@ M.edit_files = function(opts)
     }
   end
 
+  ---@type window
   local winnr
+  ---@type buffer
   local bufnr
 
   local is_diff = vim.tbl_contains(argv, "-d")
@@ -234,7 +237,7 @@ M.edit_files = function(opts)
       vim.cmd.split()
     elseif open == "vsplit" then
       vim.cmd.vsplit()
-    else
+    elseif open == "tab" then
       vim.cmd.tabnew()
     end
     vim.api.nvim_set_current_buf(focus.bufnr)
