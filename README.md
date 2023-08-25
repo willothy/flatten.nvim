@@ -14,16 +14,6 @@ Flatten allows you to open files from a neovim terminal buffer in your current n
 - [x] Command passthrough from guest to host
 - [x] Flatten instances from wezterm and kitty tabs/panes based on working directory
 
-## Plans and Ideas
-
-Ideas:
-
-- [ ] Multi-screen support
-  - [ ] Move buffers between Neovim instances in separate windows
-  - [ ] Single cursor between Neovim instances in separate windows
-
-If you have an idea or feature request, open an issue with the `enhancement` tag!
-
 ## Demo
 
 https://user-images.githubusercontent.com/38540736/224443095-91450818-f298-4e08-a951-ee3fcc607330.mp4
@@ -35,16 +25,18 @@ Config for demo [here](#advanced-configuration) (autodelete gitcommit on write a
 With `lazy.nvim`:
 
 ```lua
-
-{
-    'willothy/flatten.nvim',
-    config = true,
-    -- or pass configuration with
-    -- opts = {  }
-    -- Ensure that it runs first to minimize delay when opening file from terminal
-    lazy = false, priority = 1001,
-}
-
+require('lazy').setup({
+    {
+        'willothy/flatten.nvim',
+        config = true,
+        -- or pass configuration with
+        -- opts = {  }
+        -- Ensure that it runs first to minimize delay when opening file from terminal
+        lazy = false,
+        priority = 1001,
+    },
+    --- ...
+})
 ```
 
 To avoid loading plugins in guest sessions you can use the following in your config:
@@ -64,28 +56,67 @@ require('lazy').setup( --[[ your normal config ]] )
 
 ## Usage
 
-```zsh
-# open files normally
+### open files normally
+
+```bash
 nvim file1 file2
+```
 
-# force blocking for a file
+### force blocking for a file
+
+```bash
 nvim --cmd 'let g:flatten_wait=1' file1
+```
 
-# open files in diff mode
+<details>
+
+<summary>or, with a custom should_block handler</summary>
+
+```bash
+nvim -b file1
+```
+
+</details>
+
+### open files in diff mode
+
+```bash
 nvim -d file1 file2
+```
 
-# enable blocking for $VISUAL
-# allows edit-exec
-# in your .bashrc, .zshrc, etc.
+### enable blocking for $VISUAL
+
+allows edit-exec
+
+```bash
 export VISUAL="nvim --cmd 'let g:flatten_wait=1'"
+```
 
-# enable manpage formatting
+<details>
+
+<summary>or, with a custom should_block handler</summary>
+
+```bash
+export VISUAL="nvim -b"
+```
+
+</details>
+
+### enable manpage formatting
+
+```bash
 export MANPAGER="nvim +Man!"
+```
 
-# execute a command in the **host**, *before* opening files
+### execute a command in the **host**, _before_ opening files
+
+```bash
 nvim --cmd <cmd>
+```
 
-# execute a command on the **host**, *after* opening files
+### execute a command on the **host**, _after_ opening files
+
+```bash
 nvim +<cmd>
 ```
 
