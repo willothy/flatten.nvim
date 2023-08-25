@@ -5,6 +5,7 @@ function M.unblock_guest(guest_pipe)
   vim.fn.rpcnotify(
     response_sock,
     "nvim_exec_lua",
+    ---@diagnostic disable-next-line: param-type-mismatch
     "vim.cmd.qa({ bang = true })",
     {}
   )
@@ -24,7 +25,7 @@ function M.notify_when_done(pipe, bufnr, callback, ft)
   })
 end
 
----@param focus Flatten.BufInfo
+---@param focus Flatten.BufInfo?
 function M.smart_open(focus)
   -- set of valid target windows
   local valid_targets = {}
@@ -220,7 +221,12 @@ M.edit_files = function(opts)
   elseif type(open) == "function" then
     bufnr, winnr = open(files, argv, stdin_buf, guest_cwd)
     if winnr == nil and bufnr ~= nil then
-      winnr = vim.fn.bufwinid(bufnr)
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if vim.api.nvim_win_get_buf(win) == bufnr then
+          winnr = win
+          break
+        end
+      end
     end
   elseif type(open) == "string" then
     local focus = focus_first and files[1] or files[#files]
@@ -231,8 +237,13 @@ M.edit_files = function(opts)
     if open == "smart" then
       M.smart_open(focus)
     elseif open == "alternate" then
-      winnr = vim.fn.win_getid(vim.fn.winnr("#"))
-      vim.api.nvim_set_current_win(winnr)
+      local id = vim.fn.win_getid(vim.fn.winnr("#"))
+      if id and id ~= 0 then
+        winnr = id
+        vim.api.nvim_set_current_win(winnr)
+      else
+        M.smart_open(focus)
+      end
     elseif open == "split" then
       vim.cmd.split()
     elseif open == "vsplit" then
@@ -253,7 +264,14 @@ M.edit_files = function(opts)
 
   local ft
   if bufnr ~= nil then
-    ft = vim.api.nvim_buf_get_option(bufnr, "filetype")
+    if vim.api.nvim_get_option_value then
+      ft = vim.api.nvim_get_option_value("filetype", {
+        buf = bufnr,
+      })
+    else
+      ---@diagnostic disable-next-line: redundant-parameter
+      ft = vim.api.nvim_buf_get_option(bufnr, "filetype")
+    end
   end
 
   local block = config.block_for[ft] or force_block
@@ -266,7 +284,13 @@ M.edit_files = function(opts)
     end
   end
 
-  callbacks.post_open(bufnr, winnr, ft, block, is_diff)
+  callbacks.post_open(
+    bufnr or vim.api.nvim_get_current_buf(),
+    winnr or vim.api.nvim_get_current_win(),
+    ft,
+    block,
+    is_diff
+  )
 
   if block then
     M.augroup = vim.api.nvim_create_augroup("flatten_notify", { clear = true })
