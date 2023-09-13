@@ -134,8 +134,7 @@ M.edit_files = function(opts)
   if nfiles > 0 then
     for i, fname in ipairs(files) do
       local is_absolute = string.find(fname, "^/")
-      local fpath =
-        vim.fn.fnameescape(is_absolute and fname or (guest_cwd .. "/" .. fname))
+      local fpath = is_absolute and fname or (guest_cwd .. "/" .. fname)
       local file = {
         fname = fpath,
         bufnr = vim.fn.bufadd(fpath),
