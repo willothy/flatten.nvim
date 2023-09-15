@@ -2,7 +2,7 @@ local M = {}
 
 function M.unblock_guest(guest_pipe)
   local response_sock = vim.fn.sockconnect("pipe", guest_pipe, { rpc = true })
-  vim.fn.rpcnotify(
+  vim.rpcnotify(
     response_sock,
     "nvim_exec_lua",
     "vim.cmd.qa({ bang = true })",

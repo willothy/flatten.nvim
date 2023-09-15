@@ -56,7 +56,7 @@ function M.default_should_nest(host)
   -- if their working directories are the same.
   -- This allows you to open a new instance in a different cwd, but open files from the active cwd in your current session.
   local call = "return vim.fn.getcwd(-1)"
-  local ok, host_cwd = pcall(vim.fn.rpcrequest, host, "nvim_exec_lua", call, {})
+  local ok, host_cwd = pcall(vim.rpcrequest, host, "nvim_exec_lua", call, {})
 
   -- Yield to default behavior if RPC call fails
   if not ok then

@@ -13,7 +13,7 @@ local function sanitize(path)
 end
 
 function M.exec_on_host(call, opts)
-  return vim.fn.rpcrequest(host, "nvim_exec_lua", call, opts or {})
+  return vim.rpcrequest(host, "nvim_exec_lua", call, opts or {})
 end
 
 function M.maybe_block(block)
