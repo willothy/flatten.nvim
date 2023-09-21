@@ -1,6 +1,18 @@
-# flatten.nvim
+<!-- panvimdoc-ignore-start -->
 
-Flatten allows you to open files from a neovim terminal buffer in your current neovim instance instead of a nested one.
+<h1 align='center'>
+  flatten.nvim
+</h1>
+
+<p align='center'>
+  <b>Open files and command output from `:term`, Wezterm and Kitty in your current neovim instance</b>
+</p>
+
+https://github.com/willothy/flatten.nvim/assets/38540736/b4e4e75a-9be2-478d-9098-7e421dd6d1d9
+
+Config for demo [here](#advanced-configuration-examples) (autodelete gitcommit on write and toggling terminal are not defaults)
+
+<!-- panvimdoc-ignore-end -->
 
 ## Features
 
@@ -9,34 +21,29 @@ Flatten allows you to open files from a neovim terminal buffer in your current n
 - [x] Configuration
   - [x] Callbacks/hooks for user-specific workflows
   - [x] Open in vsplit, split, tab, current window, or alternate window
-- [x] Pipe from terminal into a new Neovim buffer ([demo](https://user-images.githubusercontent.com/38540736/225779817-ed7efea8-9108-4f28-983f-1a889d32826f.mp4))
+- [x] Pipe from terminal into a new Neovim buffer<!-- panvimdoc-ignore-start --> ([demo](https://user-images.githubusercontent.com/38540736/225779817-ed7efea8-9108-4f28-983f-1a889d32826f.mp4)) <!-- panvimdoc-ignore-end -->
 - [x] Setting to force blocking from the commandline, regardless of filetype
 - [x] Command passthrough from guest to host
 - [x] Flatten instances from wezterm and kitty tabs/panes based on working directory
-
-## Demo
-
-https://user-images.githubusercontent.com/38540736/224443095-91450818-f298-4e08-a951-ee3fcc607330.mp4
-
-Config for demo [here](#advanced-configuration) (autodelete gitcommit on write and toggling terminal are not defaults)
 
 ## Installation[^1]
 
 With `lazy.nvim`:
 
 ```lua
-require('lazy').setup({
-    {
-        'willothy/flatten.nvim',
-        config = true,
-        -- or pass configuration with
-        -- opts = {  }
-        -- Ensure that it runs first to minimize delay when opening file from terminal
-        lazy = false,
-        priority = 1001,
-    },
-    --- ...
+require("lazy").setup({
+  {
+    "willothy/flatten.nvim",
+    config = true,
+    -- or pass configuration with
+    -- opts = {  }
+    -- Ensure that it runs first to minimize delay when opening file from terminal
+    lazy = false,
+    priority = 1001,
+  },
+  --- ...
 })
+
 ```
 
 To avoid loading plugins in guest sessions you can use the following in your config:
@@ -44,77 +51,58 @@ To avoid loading plugins in guest sessions you can use the following in your con
 ```lua
 -- If opening from inside neovim terminal then do not load all the other plugins
 if os.getenv("NVIM") ~= nil then
-    require('lazy').setup {
-        {'willothy/flatten.nvim', config = true },
-    }
-    return
+  require("lazy").setup({
+    { "willothy/flatten.nvim", config = true },
+  })
+  return
 end
 
 -- Otherwise proceed as normal
-require('lazy').setup( --[[ your normal config ]] )
+require("lazy").setup( --[[ your normal config ]])
+
 ```
 
 ## Usage
 
-### open files normally
+Open files normally:
 
 ```bash
 nvim file1 file2
 ```
 
-### force blocking for a file
+Force blocking for a file:
 
 ```bash
+# with a custom block handler, you can use `nvim -b file1 file2`
 nvim --cmd 'let g:flatten_wait=1' file1
 ```
 
-<details>
-
-<summary>or, with a custom should_block handler</summary>
-
-```bash
-nvim -b file1
-```
-
-</details>
-
-### open files in diff mode
+Open files in diff mode:
 
 ```bash
 nvim -d file1 file2
 ```
 
-### enable blocking for $VISUAL
-
-allows edit-exec
+Enable blocking for `$VISUAL`:
 
 ```bash
-export VISUAL="nvim --cmd 'let g:flatten_wait=1'"
+# with a custom block handler, you can use `export VISUAL="nvim -b"`
+export VISUAL="nvim --cmd 'let g:flatten_wait=1'" # allows edit-exec <C-x><C-e>
 ```
 
-<details>
-
-<summary>or, with a custom should_block handler</summary>
-
-```bash
-export VISUAL="nvim -b"
-```
-
-</details>
-
-### enable manpage formatting
+Enable manpage formatting:
 
 ```bash
 export MANPAGER="nvim +Man!"
 ```
 
-### execute a command in the **host**, _before_ opening files
+Execute a command in the host instance, before opening files:
 
 ```bash
 nvim --cmd <cmd>
 ```
 
-### execute a command on the **host**, _after_ opening files
+Execute a command in the host instance, after opening files:
 
 ```bash
 nvim +<cmd>
@@ -141,76 +129,77 @@ Flatten comes with the following defaults:
 --
 ---@alias OpenHandler fun(files: BufInfo[], argv: string[], stdin_buf: BufInfo, guest_cwd: string):window, buffer
 --
-{
-    callbacks = {
-        ---Called to determine if a nested session should wait for the host to close the file.
-        ---@param argv table a list of all the arguments in the nested session
-        ---@return boolean
-        should_block = require("flatten").default_should_block,
-        ---If this returns true, the nested session will be opened.
-        ---If false, default behavior is used, and
-        ---config.nest_if_no_args is respected.
-        ---@type fun(host: channel):boolean
-        should_nest = require("flatten").default_should_nest,
-        ---Called before a nested session is opened.
-        pre_open = function() end,
-        ---Called after a nested session is opened.
-        ---@param bufnr buffer
-        ---@param winnr window
-        ---@param filetype string
-        ---@param is_blocking boolean
-        ---@param is_diff boolean
-        post_open = function(bufnr, winnr, filetype, is_blocking, is_diff) end,
-        ---Called when a nested session is done waiting for the host.
-        ---@param filetype string
-        block_end = function(filetype) end,
-    },
-    -- <String, Bool> dictionary of filetypes that should be blocking
-    block_for = {
-        gitcommit = true
-    },
-    -- Command passthrough
-    allow_cmd_passthrough = true,
-    -- Allow a nested session to open if Neovim is opened without arguments
-    nest_if_no_args = false,
-    -- Window options
-    window = {
-        -- Options:
-        -- current        -> open in current window (default)
-        -- alternate      -> open in alternate window (recommended)
-        -- tab            -> open in new tab
-        -- split          -> open in split
-        -- vsplit         -> open in vsplit
-        -- smart          -> smart open (avoids special buffers)
-        -- OpenHandler    -> allows you to handle file opening yourself (see Types)
-        --
-        open = "current",
-        -- Options:
-        -- vsplit         -> opens files in diff vsplits
-        -- split          -> opens files in diff splits
-        -- tab_vsplit     -> creates a new tabpage, and opens diff vsplits
-        -- tab_split      -> creates a new tabpage, and opens diff splits
-        -- OpenHandler    -> allows you to handle file opening yourself (see Types)
-        diff = "tab_vsplit",
-        -- Affects which file gets focused when opening multiple at once
-        -- Options:
-        -- "first"        -> open first file of new files (default)
-        -- "last"         -> open last file of new files
-        focus = "first"
-    },
-    -- Override this function to use a different socket to connect to the host
-    -- On the host side this can return nil or the socket address.
-    -- On the guest side this should return the socket address
-    -- or a non-zero channel id from `sockconnect`
-    -- flatten.nvim will detect if the address refers to this instance of nvim, to determine if this is a host or a guest
-    pipe_path = require'flatten'.default_pipe_path,
-    -- The `default_pipe_path` will treat the first nvim instance within a single kitty/wezterm session as the host
-    -- You can configure this behaviour using the following:
-    one_per = {
-        kitty = true, -- Flatten all instance in the current Kitty session
-        wezterm = true, -- Flatten all instance in the current Wezterm session
-    },
+local config = {
+  callbacks = {
+    ---Called to determine if a nested session should wait for the host to close the file.
+    ---@param argv table a list of all the arguments in the nested session
+    ---@return boolean
+    should_block = require("flatten").default_should_block,
+    ---If this returns true, the nested session will be opened.
+    ---If false, default behavior is used, and
+    ---config.nest_if_no_args is respected.
+    ---@type fun(host: channel):boolean
+    should_nest = require("flatten").default_should_nest,
+    ---Called before a nested session is opened.
+    pre_open = function() end,
+    ---Called after a nested session is opened.
+    ---@param bufnr buffer
+    ---@param winnr window
+    ---@param filetype string
+    ---@param is_blocking boolean
+    ---@param is_diff boolean
+    post_open = function(bufnr, winnr, filetype, is_blocking, is_diff) end,
+    ---Called when a nested session is done waiting for the host.
+    ---@param filetype string
+    block_end = function(filetype) end,
+  },
+  -- <String, Bool> dictionary of filetypes that should be blocking
+  block_for = {
+    gitcommit = true,
+  },
+  -- Command passthrough
+  allow_cmd_passthrough = true,
+  -- Allow a nested session to open if Neovim is opened without arguments
+  nest_if_no_args = false,
+  -- Window options
+  window = {
+    -- Options:
+    -- current        -> open in current window (default)
+    -- alternate      -> open in alternate window (recommended)
+    -- tab            -> open in new tab
+    -- split          -> open in split
+    -- vsplit         -> open in vsplit
+    -- smart          -> smart open (avoids special buffers)
+    -- OpenHandler    -> allows you to handle file opening yourself (see Types)
+    --
+    open = "current",
+    -- Options:
+    -- vsplit         -> opens files in diff vsplits
+    -- split          -> opens files in diff splits
+    -- tab_vsplit     -> creates a new tabpage, and opens diff vsplits
+    -- tab_split      -> creates a new tabpage, and opens diff splits
+    -- OpenHandler    -> allows you to handle file opening yourself (see Types)
+    diff = "tab_vsplit",
+    -- Affects which file gets focused when opening multiple at once
+    -- Options:
+    -- "first"        -> open first file of new files (default)
+    -- "last"         -> open last file of new files
+    focus = "first",
+  },
+  -- Override this function to use a different socket to connect to the host
+  -- On the host side this can return nil or the socket address.
+  -- On the guest side this should return the socket address
+  -- or a non-zero channel id from `sockconnect`
+  -- flatten.nvim will detect if the address refers to this instance of nvim, to determine if this is a host or a guest
+  pipe_path = require("flatten").default_pipe_path,
+  -- The `default_pipe_path` will treat the first nvim instance within a single kitty/wezterm session as the host
+  -- You can configure this behaviour using the following:
+  one_per = {
+    kitty = true, -- Flatten all instance in the current Kitty session
+    wezterm = true, -- Flatten all instance in the current Wezterm session
+  },
 }
+
 ```
 
 ### Advanced configuration examples
@@ -226,98 +215,104 @@ Note that when opening a file in blocking mode, such as a git commit, the termin
 Here's my setup for toggleterm, including an autocmd to automatically close a git commit buffer on write:
 
 ```lua
-{
-    'willothy/flatten.nvim',
-    opts = function()
-        ---@type Terminal?
-        local saved_terminal
+local flatten = {
+  "willothy/flatten.nvim",
+  opts = function()
+    ---@type Terminal?
+    local saved_terminal
 
-        return {
-            window = {
-                open = "alternate"
-            },
-            callbacks = {
-                should_block = function(argv)
-                    -- Note that argv contains all the parts of the CLI command, including
-                    -- Neovim's path, commands, options and files.
-                    -- See: :help v:argv
+    return {
+      window = {
+        open = "alternate",
+      },
+      callbacks = {
+        should_block = function(argv)
+          -- Note that argv contains all the parts of the CLI command, including
+          -- Neovim's path, commands, options and files.
+          -- See: :help v:argv
 
-                    -- In this case, we would block if we find the `-b` flag
-                    -- This allows you to use `nvim -b file1` instead of `nvim --cmd 'let g:flatten_wait=1' file1`
-                    return vim.tbl_contains(argv, "-b")
+          -- In this case, we would block if we find the `-b` flag
+          -- This allows you to use `nvim -b file1` instead of
+          -- `nvim --cmd 'let g:flatten_wait=1' file1`
+          return vim.tbl_contains(argv, "-b")
 
-                    -- Alternatively, we can block if we find the diff-mode option
-                    -- return vim.tbl_contains(argv, "-d")
-                end,
-                pre_open = function()
-                  local term = require("toggleterm.terminal")
-                  local termid = term.get_focused_id()
-                  saved_terminal = term.get(termid)
-                end,
-                post_open = function(bufnr, winnr, ft, is_blocking)
-                    if is_blocking and saved_terminal then
-                        -- Hide the terminal while it's blocking
-                        saved_terminal:close()
-                    else
-                        -- If it's a normal file, just switch to its window
-                        vim.api.nvim_set_current_win(winnr)
+          -- Alternatively, we can block if we find the diff-mode option
+          -- return vim.tbl_contains(argv, "-d")
+        end,
+        pre_open = function()
+          local term = require("toggleterm.terminal")
+          local termid = term.get_focused_id()
+          saved_terminal = term.get(termid)
+        end,
+        post_open = function(bufnr, winnr, ft, is_blocking)
+          if is_blocking and saved_terminal then
+            -- Hide the terminal while it's blocking
+            saved_terminal:close()
+          else
+            -- If it's a normal file, just switch to its window
+            vim.api.nvim_set_current_win(winnr)
 
-                        -- If we're in a different wezterm pane/tab, switch to the current one
-                        -- Requires willothy/wezterm.nvim
-                        require("wezterm").switch_pane.id(
-                        tonumber(os.getenv("WEZTERM_PANE"))
-                        )
-                    end
+            -- If we're in a different wezterm pane/tab, switch to the current one
+            -- Requires willothy/wezterm.nvim
+            require("wezterm").switch_pane.id(
+              tonumber(os.getenv("WEZTERM_PANE"))
+            )
+          end
 
-                    -- If the file is a git commit, create one-shot autocmd to delete its buffer on write
-                    -- If you just want the toggleable terminal integration, ignore this bit
-                    if ft == "gitcommit" or ft == "gitrebase" then
-                        vim.api.nvim_create_autocmd("BufWritePost", {
-                            buffer = bufnr,
-                            once = true,
-                            callback = vim.schedule_wrap(function()
-                                vim.api.nvim_buf_delete(bufnr, {})
-                            end)
-                        })
-                    end
-                end,
-                block_end = function()
-                    -- After blocking ends (for a git commit, etc), reopen the terminal
-                    vim.schedule(function()
-                        if saved_terminal then
-                            saved_terminal:open()
-                            saved_terminal = nil
-                        end
-                    end)
-                end
-            }
-        }
-    end
+          -- If the file is a git commit, create one-shot autocmd to delete its buffer on write
+          -- If you just want the toggleable terminal integration, ignore this bit
+          if ft == "gitcommit" or ft == "gitrebase" then
+            vim.api.nvim_create_autocmd("BufWritePost", {
+              buffer = bufnr,
+              once = true,
+              callback = vim.schedule_wrap(function()
+                vim.api.nvim_buf_delete(bufnr, {})
+              end),
+            })
+          end
+        end,
+        block_end = function()
+          -- After blocking ends (for a git commit, etc), reopen the terminal
+          vim.schedule(function()
+            if saved_terminal then
+              saved_terminal:open()
+              saved_terminal = nil
+            end
+          end)
+        end,
+      },
+    }
+  end,
 }
-
 ```
 
-#### Pipe path: One instance of Neovim for Kitty/Wezterm
+#### Pipe path
 
 Flatten now checks for kitty and wezterm by default, but this is how it works.
 If you use another terminal emulator or multiplexer, you can implement
 your `pipe_path` function based on this.
 
 ```lua
-pipe_path = function()
+local pipe_path = function()
   -- If running in a terminal inside Neovim:
-  if vim.env.NVIM then return vim.env.NVIM end
+  if vim.env.NVIM then
+    return vim.env.NVIM
+  end
   -- If running in a Kitty terminal,
   -- all tabs/windows/os-windows in the same instance of kitty
   -- will open in the first neovim instance
   if vim.env.KITTY_PID then
-    local addr = ("%s/%s"):format(vim.fn.stdpath "run", "kitty.nvim-" .. vim.env.KITTY_PID)
+    local addr = ("%s/%s"):format(
+      vim.fn.stdpath("run"),
+      "kitty.nvim-" .. vim.env.KITTY_PID
+    )
     if not vim.loop.fs_stat(addr) then
       vim.fn.serverstart(addr)
     end
     return addr
   end
 end
+
 ```
 
 ## About
