@@ -1,4 +1,4 @@
-*flatten.nvim.txt*        For NVIM v0.8.0       Last change: 2023 September 21
+*flatten.nvim.txt*        For NVIM v0.8.0       Last change: 2023 September 22
 
 ==============================================================================
 Table of Contents                             *flatten.nvim-table-of-contents*
@@ -41,26 +41,10 @@ With `lazy.nvim`
     })
 <
 
-Toavoid loading plugins in guest sessions you can use the following in your
-config:
-
->lua
-    -- If opening from inside neovim terminal then do not load all the other plugins
-    if os.getenv("NVIM") ~= nil then
-      require("lazy").setup({
-        { "willothy/flatten.nvim", config = true },
-      })
-      return
-    end
-    
-    -- Otherwise proceed as normal
-    require("lazy").setup( --[[ your normal config ]])
-<
-
 
 USAGE                                                     *flatten.nvim-usage*
 
-Open files normally:
+Openfiles normally:
 
 >bash
     nvim file1 file2
