@@ -46,22 +46,6 @@ require("lazy").setup({
 
 ```
 
-To avoid loading plugins in guest sessions you can use the following in your config:
-
-```lua
--- If opening from inside neovim terminal then do not load all the other plugins
-if os.getenv("NVIM") ~= nil then
-  require("lazy").setup({
-    { "willothy/flatten.nvim", config = true },
-  })
-  return
-end
-
--- Otherwise proceed as normal
-require("lazy").setup( --[[ your normal config ]])
-
-```
-
 ## Usage
 
 Open files normally:
