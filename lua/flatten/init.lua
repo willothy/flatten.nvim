@@ -125,6 +125,7 @@ M.config = {
   block_for = {
     gitcommit = true,
     gitrebase = true,
+    diff = true,
   },
   window = {
     ---@type "current" | "alternate" | "split" | "vsplit" | "tab" | "smart" | Flatten.OpenHandler
