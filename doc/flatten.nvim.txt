@@ -1,4 +1,4 @@
-*flatten.nvim.txt*        For NVIM v0.8.0       Last change: 2023 September 24
+*flatten.nvim.txt*         For NVIM v0.8.0        Last change: 2023 October 03
 
 ==============================================================================
 Table of Contents                             *flatten.nvim-table-of-contents*
@@ -138,6 +138,7 @@ Flatten comes with the following defaults:
       -- <String, Bool> dictionary of filetypes that should be blocking
       block_for = {
         gitcommit = true,
+        gitrebase = true,
       },
       -- Command passthrough
       allow_cmd_passthrough = true,
