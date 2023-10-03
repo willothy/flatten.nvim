@@ -8,7 +8,7 @@
   <b>Open files and command output from `:term`, Wezterm and Kitty in your current neovim instance</b>
 </p>
 
-https://github.com/willothy/flatten.nvim/assets/38540736/b4e4e75a-9be2-478d-9098-7e421dd6d1d9
+<https://github.com/willothy/flatten.nvim/assets/38540736/b4e4e75a-9be2-478d-9098-7e421dd6d1d9>
 
 Config for demo [here](#advanced-configuration-examples) (autodelete gitcommit on write and toggling terminal are not defaults)
 
@@ -178,10 +178,10 @@ local config = {
   -- flatten.nvim will detect if the address refers to this instance of nvim, to determine if this is a host or a guest
   pipe_path = require("flatten").default_pipe_path,
   -- The `default_pipe_path` will treat the first nvim instance within a single kitty/wezterm session as the host
-  -- You can configure this behaviour using the following:
+  -- You can configure this behaviour using the following opt-in integrations:
   one_per = {
-    kitty = true, -- Flatten all instance in the current Kitty session
-    wezterm = true, -- Flatten all instance in the current Wezterm session
+    kitty = false, -- Flatten all instance in the current Kitty session
+    wezterm = false, -- Flatten all instance in the current Wezterm session
   },
 }
 
