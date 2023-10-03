@@ -134,7 +134,7 @@ M.config = {
     ---@type "first" | "last"
     focus = "first",
   },
-  one_per = { kitty = true, wezterm = true },
+  one_per = { kitty = false, wezterm = false },
   ---@type string | fun():(string|nil)
   pipe_path = M.default_pipe_path,
   ---Allow commands to be passed to nvim remotely via +... or --cmd ...
