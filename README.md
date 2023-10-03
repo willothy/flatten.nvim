@@ -140,6 +140,7 @@ local config = {
   -- <String, Bool> dictionary of filetypes that should be blocking
   block_for = {
     gitcommit = true,
+    gitrebase = true,
   },
   -- Command passthrough
   allow_cmd_passthrough = true,
