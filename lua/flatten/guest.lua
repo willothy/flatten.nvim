@@ -12,8 +12,48 @@ local function sanitize(path)
   return path:gsub("\\", "/")
 end
 
-function M.exec_on_host(call, opts)
-  return vim.rpcrequest(host, "nvim_exec_lua", call, opts or {})
+function M.exec_on_host(call, blocking, args)
+  args = args or {}
+
+  if blocking then
+    return vim.rpcrequest(host, "nvim_exec_lua", call, args)
+  end
+
+  local server = vim.fn.fnameescape(vim.v.servername)
+  ---@diagnostic disable: param-type-mismatch
+  return coroutine.yield(vim.rpcnotify(
+    host,
+    "nvim_exec_lua",
+    [[
+      local server = select(1, ...)
+      local call = select(2, ...)
+      local args = { select(3, ...) }
+
+      call = loadstring(call)
+      local res = { pcall(call, args) }
+      if not res[1] then
+        vim.notify(res, vim.log.levels.ERROR, { title = "flatten" })
+      end
+
+      local channel = vim.fn.sockconnect("pipe", server, { rpc = true })
+      vim.rpcnotify(channel, "nvim_exec_lua", "return require('flatten.guest').resume(...)", res)
+    ]],
+    {
+      server,
+      call,
+      unpack(args),
+    }
+  ))
+end
+
+function M.resume(...)
+  if M.task then
+    return M.task:resume(...)
+  else
+    vim.notify("flatten: no task to resume", vim.log.levels.ERROR, {
+      title = "flatten",
+    })
+  end
 end
 
 function M.maybe_block(block)
@@ -56,7 +96,7 @@ local function send_files(files, stdin)
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     vim.api.nvim_buf_delete(buf, { force = true })
   end
-  local block = M.exec_on_host(call) or force_block
+  local block = M.exec_on_host(call, true) or force_block
   M.maybe_block(block)
 end
 
@@ -122,29 +162,33 @@ M.init = function(host_pipe)
       end)
       nfiles = #files
 
-      -- No arguments, user is probably opening a nested session intentionally
-      -- Or only piping input from stdin
-      if nfiles < 1 then
-        local should_nest, should_block = config.nest_if_no_args, false
+      M.task = require("micro-async").void(function()
+        -- No arguments, user is probably opening a nested session intentionally
+        -- Or only piping input from stdin
+        if nfiles < 1 then
+          local should_nest, should_block = config.nest_if_no_args, false
 
-        if config.callbacks.no_files then
-          local result = M.exec_on_host(
-            "return require'flatten'.config.callbacks.no_files()"
-          )
-          if type(result) == "boolean" then
-            should_nest = result
-          elseif type(result) == "table" then
-            should_nest = result.nest_if_no_args
-            should_block = result.should_block
+          if config.callbacks.no_files then
+            local result = M.exec_on_host(
+              "return require'flatten'.config.callbacks.no_files()",
+              false
+            )
+
+            if type(result) == "boolean" then
+              should_nest = result
+            elseif type(result) == "table" then
+              should_nest = result.nest_if_no_args
+              should_block = result.should_block
+            end
           end
+          if should_nest == true then
+            return
+          end
+          M.maybe_block(should_block)
         end
-        if should_nest == true then
-          return
-        end
-        M.maybe_block(should_block)
-      end
 
-      send_files(files, {})
+        send_files(files, {})
+      end)()
     end,
   })
 end
