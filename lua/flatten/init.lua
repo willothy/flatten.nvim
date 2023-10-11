@@ -52,6 +52,12 @@ function M.default_should_nest(host)
     return false
   end
 
+  -- if we're not using kitty or wezterm,
+  -- early return and allow the nested session to open
+  if not M.config.one_per.kitty and not M.config.one_per.wezterm then
+    return true
+  end
+
   -- If in a wezterm or kitty split, only open files in the first neovim instance
   -- if their working directories are the same.
   -- This allows you to open a new instance in a different cwd, but open files from the active cwd in your current session.
