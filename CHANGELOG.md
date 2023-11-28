@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0](https://github.com/willothy/flatten.nvim/compare/v0.4.1...v0.5.0) (2023-11-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* make wezterm/kitty feature opt-in, disabled by default
+
+### Features
+
+* smart open should prefer alternative window ([#83](https://github.com/willothy/flatten.nvim/issues/83)) ([8a88333](https://github.com/willothy/flatten.nvim/commit/8a883330dd9436f010430e78ae7cb449037c79ba))
+
+
+### Code Refactoring
+
+* make wezterm/kitty feature opt-in, disabled by default ([797b02a](https://github.com/willothy/flatten.nvim/commit/797b02a6cbadfc0bd0675d2f469439c2ca3cf267))
+
 ## [0.4.1](https://github.com/willothy/flatten.nvim/compare/v0.4.0...v0.4.1) (2023-09-24)
 
 
