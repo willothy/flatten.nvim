@@ -42,18 +42,24 @@ function M.smart_open(focus)
 
   -- traverse the window tree to find the first available window
   local stack = { layout }
+  local win_alt = vim.fn.win_getid(vim.fn.winnr("#"))
   local win
 
-  while #stack > 0 do
-    local node = table.remove(stack)
-    if node[1] == "leaf" then
-      if valid_targets[node[2]] then
-        win = node[2]
-        break
-      end
-    else
-      for i = #node[2], 1, -1 do
-        table.insert(stack, node[2][i])
+  -- prefer the alternative window if it's valid
+  if valid_targets[win_alt] and win_alt ~= vim.api.nvim_get_current_win() then
+    win = win_alt
+  else
+    while #stack > 0 do
+      local node = table.remove(stack)
+      if node[1] == "leaf" then
+        if valid_targets[node[2]] then
+          win = node[2]
+          break
+        end
+      else
+        for i = #node[2], 1, -1 do
+          table.insert(stack, node[2][i])
+        end
       end
     end
   end
