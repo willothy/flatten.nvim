@@ -35,7 +35,7 @@ local function send_files(files, stdin)
     or config.callbacks.should_block(vim.v.argv)
 
   local server = vim.fn.fnameescape(vim.v.servername)
-  local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1))
+  local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1) --[[@as string]])
   if is_windows() then
     server = sanitize(server)
     cwd = sanitize(cwd)
@@ -64,7 +64,7 @@ function M.sockconnect(host_pipe)
   return pcall(vim.fn.sockconnect, "pipe", host_pipe, { rpc = true })
 end
 
-M.init = function(host_pipe)
+function M.init(host_pipe)
   -- Connect to host process
   if type(host_pipe) == "number" then
     host = host_pipe
@@ -111,11 +111,13 @@ M.init = function(host_pipe)
         if not vim.api.nvim_buf_is_valid(buffer) then
           return
         end
+        ---@diagnostic disable-next-line: deprecated
         local buftype = vim.api.nvim_buf_get_option(buffer, "buftype")
         if buftype ~= "" and buftype ~= "acwrite" then
           return
         end
         local name = vim.api.nvim_buf_get_name(buffer)
+        ---@diagnostic disable-next-line: deprecated
         if name ~= "" and vim.api.nvim_buf_get_option(buffer, "buflisted") then
           return name
         end

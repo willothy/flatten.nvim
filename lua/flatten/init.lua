@@ -69,6 +69,7 @@ function M.default_should_nest(host)
     return false
   end
 
+  ---@diagnostic disable-next-line: param-type-mismatch
   return not vim.startswith(vim.fn.getcwd(-1), host_cwd)
 end
 
@@ -157,6 +158,7 @@ M.setup = function(opt)
 
   local pipe_path = M.config.pipe_path
   if type(pipe_path) == "function" then
+    ---@diagnostic disable-next-line: cast-local-type
     pipe_path = pipe_path()
   end
 

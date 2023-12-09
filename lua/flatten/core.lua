@@ -5,6 +5,7 @@ function M.unblock_guest(guest_pipe)
   vim.rpcnotify(
     response_sock,
     "nvim_exec_lua",
+    ---@diagnostic disable-next-line: param-type-mismatch
     "vim.cmd.qa({ bang = true })",
     {}
   )
@@ -24,7 +25,8 @@ function M.notify_when_done(pipe, bufnr, callback, ft)
   })
 end
 
----@param focus Flatten.BufInfo
+---@param focus Flatten.BufInfo?
+---@return integer?
 function M.smart_open(focus)
   -- set of valid target windows
   local valid_targets = {}
@@ -88,7 +90,7 @@ end
 
 ---@param opts EditFilesOptions
 ---@return boolean
-M.edit_files = function(opts)
+function M.edit_files(opts)
   local files = opts.files
   local response_pipe = opts.response_pipe
   local guest_cwd = opts.guest_cwd
@@ -152,7 +154,7 @@ M.edit_files = function(opts)
           buf = file.bufnr,
         })
       else
-        ---@diagnostic disable-next-line: redundant-parameter
+        ---@diagnostic disable-next-line: deprecated
         vim.api.nvim_buf_set_option(file.bufnr, "buflisted", true)
       end
 
@@ -161,16 +163,17 @@ M.edit_files = function(opts)
   end
 
   -- Create buffer for stdin pipe input
+  ---@type Flatten.BufInfo
   local stdin_buf = nil
   if stdin_lines > 0 then
     -- Create buffer for stdin
-    stdin_buf = vim.api.nvim_create_buf(true, false)
+    local bufnr = vim.api.nvim_create_buf(true, false)
     -- Add text to buffer
-    vim.api.nvim_buf_set_lines(stdin_buf, 0, 0, true, stdin)
+    vim.api.nvim_buf_set_lines(bufnr, 0, 0, true, stdin)
 
     stdin_buf = {
       fname = "",
-      bufnr = stdin_buf,
+      bufnr = bufnr,
     }
   end
 
@@ -186,7 +189,7 @@ M.edit_files = function(opts)
     if type(diff_open) == "function" then
       winnr, bufnr = config.window.diff(files, argv, stdin_buf, guest_cwd)
     else
-      winnr = M.smart_open()
+      winnr = M.smart_open() --[[@as integer]] -- this will never return nil
       vim.api.nvim_set_current_win(winnr)
 
       if stdin_buf then
@@ -225,6 +228,7 @@ M.edit_files = function(opts)
   elseif type(open) == "function" then
     bufnr, winnr = open(files, argv, stdin_buf, guest_cwd)
     if winnr == nil and bufnr ~= nil then
+      ---@diagnostic disable-next-line: cast-local-type
       winnr = vim.fn.bufwinid(bufnr)
     end
   elseif type(open) == "string" then
@@ -236,8 +240,8 @@ M.edit_files = function(opts)
     if open == "smart" then
       M.smart_open(focus)
     elseif open == "alternate" then
-      winnr = vim.fn.win_getid(vim.fn.winnr("#"))
-      vim.api.nvim_set_current_win(winnr)
+      winnr = vim.fn.win_getid(vim.fn.winnr("#")) --[[@as integer]]
+      vim.api.nvim_set_current_win(winnr --[[@as integer]])
     elseif open == "split" then
       vim.cmd.split()
     elseif open == "vsplit" then
@@ -258,6 +262,7 @@ M.edit_files = function(opts)
 
   local ft
   if bufnr ~= nil then
+    ---@diagnostic disable-next-line: deprecated
     ft = vim.api.nvim_buf_get_option(bufnr, "filetype")
   end
 
@@ -271,7 +276,13 @@ M.edit_files = function(opts)
     end
   end
 
-  callbacks.post_open(bufnr, winnr, ft, block, is_diff)
+  callbacks.post_open(
+    bufnr --[[@as integer]],
+    winnr --[[@as integer]],
+    ft,
+    block,
+    is_diff
+  )
 
   if block then
     M.augroup = vim.api.nvim_create_augroup("flatten_notify", { clear = true })
