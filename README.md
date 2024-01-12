@@ -198,7 +198,7 @@ local config = {
   pipe_path = require("flatten").default_pipe_path,
   -- The `default_pipe_path` will treat the first nvim instance within a single kitty/wezterm session as the host
   -- You can configure this behaviour using the following opt-in integrations:
-  one_per = {
+  integrations = {
     kitty = false, -- Flatten all instance in the current Kitty session
     wezterm = false, -- Flatten all instance in the current Wezterm session
   },
