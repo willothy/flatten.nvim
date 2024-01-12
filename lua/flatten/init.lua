@@ -1,52 +1,113 @@
-local M = {}
+---@class Flatten
+local Flatten = {}
 
----@param addr string
----@param startserver boolean
-function M.try_address(addr, startserver)
-  if not addr:find("/") then
-    addr = ("%s/%s"):format(vim.fn.stdpath("run"), addr)
-  end
-  if vim.loop.fs_stat(addr) then
-    local ok, sock = require("flatten.guest").sockconnect(addr)
-    if ok then
-      return sock
-    end
-  elseif startserver then
-    local ok = pcall(vim.fn.serverstart, addr)
-    if ok then
-      return addr
-    end
-  end
-end
+---Top-level config table
+---@class Flatten.Config
+---@field callbacks Flatten.Callbacks
+---@field window Flatten.WindowConfig
+---@field integrations Flatten.Integrations
+---@field block_for Flatten.BlockFor
+---@field allow_cmd_passthrough Flatten.AllowCmdPassthrough
+---@field nest_if_no_args Flatten.NestIfNoArgs
 
----@return string | nil
-function M.default_pipe_path()
-  -- If running in a terminal inside Neovim:
-  if vim.env.NVIM then
-    return vim.env.NVIM
-  end
-  -- If running in a Kitty terminal,
-  -- all tabs/windows/os-windows in the same instance of kitty will open in the first neovim instance
-  if M.config.one_per.kitty and vim.env.KITTY_PID then
-    local ret = M.try_address("kitty.nvim-" .. vim.env.KITTY_PID, true)
-    if ret ~= nil then
-      return ret
-    end
-  end
-  -- If running in a Wezterm,
-  -- all tabs/windows/windows in the same instance of wezterm will open in the first neovim instance
-  if M.config.one_per.wezterm and vim.env.WEZTERM_UNIX_SOCKET then
-    local pid = vim.env.WEZTERM_UNIX_SOCKET:match("gui%-sock%-(%d+)")
-    local ret = M.try_address("wezterm.nvim-" .. pid, true)
-    if ret ~= nil then
-      return ret
-    end
-  end
-end
+---@class Flatten.EditFilesOptions
+---@field files table          list of files passed into nested instance
+---@field response_pipe string guest default socket
+---@field guest_cwd string     guest global cwd
+---@field argv table           full list of options passed to the nested instance, see v:argv
+---@field stdin table          stdin lines or {}
+---@field force_block boolean  enable blocking
+---@field data any?            arbitrary data passed to the host
 
----@param host channel
+---Specify blocking by filetype
+---@alias Flatten.BlockFor table<string, boolean>
+
+---Specify whether to allow commands to be passed to nvim remotely via +... or --cmd ...
+---@alias Flatten.AllowCmdPassthrough boolean?
+
+---Specify whether to allow a nested session to open when nvim is executed without any args
+---@alias Flatten.NestIfNoArgs boolean?
+
+-- The first argument is a list of BufInfo tables representing the newly opened files.
+-- The third argument is a single BufInfo table, only provided when a buffer is created from stdin.
+--
+-- IMPORTANT: For `block_for` to work, you need to return a buffer number OR a buffer number and a window number.
+--            The `winnr` return value is not required, `vim.fn.bufwinid(bufnr)` is used if it is not provided.
+--            The `filetype` of this buffer will determine whether block should happen or not.
+--
+---@alias Flatten.OpenHandler fun(opts: Flatten.OpenContext):window, buffer
+
+---Determines what window(s) to open files in.
+---@alias Flatten.OpenConfig "'current'" | "'alternate'" | "'split'" | "'vsplit'" | "'tab'" | "'smart'" | Flatten.OpenHandler
+
+---Determines what window(s) to open diffs (nvim -d) in.
+---@alias Flatten.DiffConfig "'split'" | "'vsplit'" | "'tab_split'" | "'tab_vsplit'" | Flatten.OpenHandler
+
+---Deterimines which buffer to focus, if opening more than one remotely.
+---@alias Flatten.FocusConfig "'first'" | "'last'"
+
+---Determines what to do when there are no files to open.
+---@alias Flatten.NoFilesBehavior boolean | { nest: boolean, block: boolean }
+
+---Configure window / opening behavior
+---@class Flatten.WindowConfig
+---@field open Flatten.OpenConfig
+---@field diff Flatten.DiffConfig
+---@field focus Flatten.FocusConfig
+
+---Configure integrations with other programs / terminal emulators
+---@class Flatten.Integrations
+---@field kitty boolean
+---@field wezterm boolean
+
+---Passed to callbacks that handle opening files
+---@class Flatten.BufInfo
+---@field fname string
+---@field bufnr buffer
+
+---Passed into custom open handlers
+---@class Flatten.OpenContext
+---@field files string[]
+---@field argv string[]
+---@field stdin_buf? Flatten.BufInfo
+---@field guest_cwd string
+---@field data any
+
+---Passed into the pre_open callback
+---@class Flatten.PreOpenContext
+---@field data any
+
+---Passed into the post_open callback
+---@class Flatten.PostOpenContext
+---@field bufnr buffer
+---@field winnr window
+---@field filetype string
+---@field is_blocking boolean
+---@field is_diff boolean
+---@field data any
+
+---Passed into the block_end callback
+---@class Flatten.BlockEndContext
+---@field filetype string
+---@field data any
+
+---@class Flatten.Callbacks
+local Callbacks = {}
+
+---Called to determine if a nested session should wait for the host to close the file.
+---@param argv string[]
 ---@return boolean
-function M.default_should_nest(host)
+function Callbacks.should_block(argv)
+  argv = argv -- make linter happy
+  return false
+end
+
+---If this returns true, the nested session will be opened.
+---If false, default behavior is used, and
+---config.nest_if_no_args is respected.
+---@param host integer channel id
+---@return boolean
+function Callbacks.should_nest(host)
   -- don't nest in a neovim terminal (unless nest_if_no_args is set)
   if vim.env.NVIM ~= nil then
     return false
@@ -54,7 +115,10 @@ function M.default_should_nest(host)
 
   -- if we're not using kitty or wezterm,
   -- early return and allow the nested session to open
-  if not M.config.one_per.kitty and not M.config.one_per.wezterm then
+  if
+    not Flatten.config.integrations.kitty
+    and not Flatten.config.integrations.wezterm
+  then
     return true
   end
 
@@ -73,106 +137,101 @@ function M.default_should_nest(host)
   return not vim.startswith(vim.fn.getcwd(-1), host_cwd)
 end
 
--- selene: allow(unused_variable)
-
----@param argv table
----@return boolean
-function M.default_should_block(argv)
-  return false
+---Called before a nested session is opened.
+---@param opts Flatten.PreOpenContext
+function Callbacks.pre_open(opts)
+  opts = opts -- make linter happy
 end
 
-local is_guest
----@return boolean | nil
----Returns true if in guest, false if in host, and nil if flatten has not yet been initialized.
-function M.is_guest()
-  return is_guest
+---Called after a nested session is opened.
+---@param opts Flatten.PostOpenContext
+function Callbacks.post_open(opts)
+  opts = opts -- make linter happy
 end
 
--- Types:
---
--- Passed to callbacks that handle opening files
----@alias Flatten.BufInfo { fname: string, bufnr: buffer }
---
--- The first argument is a list of BufInfo tables representing the newly opened files.
--- The third argument is a single BufInfo table, only provided when a buffer is created from stdin.
---
--- IMPORTANT: For `block_for` to work, you need to return a buffer number OR a buffer number and a window number.
---            The `winnr` return value is not required, `vim.fn.bufwinid(bufnr)` is used if it is not provided.
---            The `filetype` of this buffer will determine whether block should happen or not.
---
----@alias Flatten.OpenHandler fun(files: Flatten.BufInfo[], argv: string[], stdin_buf: Flatten.BufInfo, guest_cwd: string):window, buffer
+---Called when a nested session is done waiting for the host.
+---@param opts Flatten.BlockEndContext
+function Callbacks.block_end(opts)
+  opts = opts -- make linter happy
+end
 
--- selene: allow(unused_variable)
-M.config = {
-  callbacks = {
-    ---Called to determine if a nested session should wait for the host to close the file.
-    ---@param argv table a list of all the arguments in the nested session
-    ---@return boolean
-    should_block = M.default_should_block,
-    ---If this returns true, the nested session will be opened.
-    ---If false, default behavior is used, and
-    ---config.nest_if_no_args is respected.
-    ---@type fun(host: channel):boolean
-    should_nest = M.default_should_nest,
-    ---Called before a nested session is opened.
-    pre_open = function() end,
-    ---Called after a nested session is opened.
-    ---@param bufnr buffer
-    ---@param winnr window
-    ---@param filetype string
-    ---@param is_blocking boolean
-    ---@param is_diff boolean
-    ---@param data any?
-    post_open = function(
-      bufnr,
-      winnr,
-      filetype,
-      is_blocking,
-      is_diff,
-      data
-    )
-    end,
-    ---Called when a nested session is done waiting for the host.
-    ---@param filetype string
-    block_end = function(filetype) end,
-    ---Only executed on the guest, used to pass arbitrary data to the host.
-    ---@return any
-    guest_data = function() end,
-  },
-  ---Specify blocking by filetype
-  ---@type table<string, boolean>
+---Executed when there are no files to open, to determine whether
+---to nest or not. The default implementation returns config.nest_if_no_args.
+---@return Flatten.NoFilesBehavior
+function Callbacks.no_files()
+  return Flatten.config.nest_if_no_args
+end
+
+---Only executed on the guest, used to pass arbitrary data to the host.
+---@return any
+function Callbacks.guest_data()
+  return nil
+end
+
+---Executed on init on both host and guest. Used to determine the pipe path
+---for communication between the host and guest, and to determine whether
+---an nvim instance is a host or guest in the first place.
+---@return string?
+function Callbacks.pipe_path()
+  -- If running in a terminal inside Neovim:
+  if vim.env.NVIM then
+    return vim.env.NVIM
+  end
+
+  local core = require("flatten.core")
+
+  -- If running in a Kitty terminal,
+  -- all tabs/windows/os-windows in the same instance of kitty will open in the first neovim instance
+  if Flatten.config.integrations.kitty and vim.env.KITTY_PID then
+    local ret = core.try_address("kitty.nvim-" .. vim.env.KITTY_PID, true)
+    if ret ~= nil then
+      return ret
+    end
+  end
+
+  -- If running in Wezterm, all tabs/windows/windows in the same instance
+  -- of wezterm will open in the first neovim instance.
+  if Flatten.config.integrations.wezterm and vim.env.WEZTERM_UNIX_SOCKET then
+    local pid = vim.env.WEZTERM_UNIX_SOCKET:match("gui%-sock%-(%d+)")
+    local ret = core.try_address("wezterm.nvim-" .. pid, true)
+    if ret ~= nil then
+      return ret
+    end
+  end
+end
+
+---@type Flatten.Config
+Flatten.config = {
+  callbacks = Callbacks,
   block_for = {
     gitcommit = true,
     gitrebase = true,
   },
   window = {
-    ---@type "current" | "alternate" | "split" | "vsplit" | "tab" | "smart" | Flatten.OpenHandler
     open = "current",
-    ---@type "split" | "vsplit" | "tab_split" | "tab_vsplit" | Flatten.OpenHandler
     diff = "tab_vsplit",
-    ---@type "first" | "last"
     focus = "first",
   },
-  one_per = { kitty = false, wezterm = false },
-  ---@type string | fun():(string|nil)
-  pipe_path = M.default_pipe_path,
-  ---Allow commands to be passed to nvim remotely via +... or --cmd ...
-  ---@type boolean
+  integrations = {
+    kitty = false,
+    wezterm = false,
+  },
   allow_cmd_passthrough = true,
-  ---Allow a nested session to open when nvim is
-  ---executed without any args
-  ---@type boolean
   nest_if_no_args = false,
 }
 
-M.setup = function(opt)
-  M.config = vim.tbl_deep_extend("keep", opt or {}, M.config)
+local is_guest
+---@return boolean | nil
+---Returns true if in guest, false if in host, and nil if flatten has not yet been initialized.
+function Flatten.is_guest()
+  return is_guest
+end
 
-  local pipe_path = M.config.pipe_path
-  if type(pipe_path) == "function" then
-    ---@diagnostic disable-next-line: cast-local-type
-    pipe_path = pipe_path()
-  end
+---@param opts Flatten.Config?
+Flatten.setup = function(opts)
+  Flatten.config = vim.tbl_deep_extend("keep", opts or {}, Flatten.config)
+
+  local pipe_path = Flatten.config.callbacks.pipe_path()
 
   if
     pipe_path == nil or vim.tbl_contains(vim.fn.serverlist(), pipe_path, {})
@@ -185,4 +244,4 @@ M.setup = function(opt)
   require("flatten.guest").init(pipe_path)
 end
 
-return M
+return Flatten

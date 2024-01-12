@@ -51,7 +51,7 @@ local function send_files(files, stdin)
   }
 
   if config.callbacks.guest_data then
-    args.data = config.callbacks.guest_data(vim.v.argv)
+    args.data = config.callbacks.guest_data()
   end
 
   local call = string.format(
@@ -142,8 +142,8 @@ function M.init(host_pipe)
           if type(result) == "boolean" then
             should_nest = result
           elseif type(result) == "table" then
-            should_nest = result.nest_if_no_args
-            should_block = result.should_block
+            should_nest = result.nest
+            should_block = result.block
           end
         end
         if should_nest == true then
