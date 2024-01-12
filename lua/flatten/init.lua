@@ -103,13 +103,25 @@ local Flatten = {}
 ---Callbacks to define custom behavior
 ---@class Flatten.Callbacks
 ---Called to determine if a nested session should wait for the host to close the file.
----@field should_block fun(argv: string[]):boolean
----@field should_nest fun(host: integer):boolean
+---@field should_block? fun(argv: string[]):boolean
+---If this returns true, the nested session will be opened.
+---If false, default behavior is used, and
+---config.nest_if_no_args is respected.
+---@field should_nest? fun(host: integer):boolean
+---Called before a nested session is opened.
 ---@field pre_open? fun(opts: Flatten.PreOpenContext)
+---Called after a nested session is opened.
 ---@field post_open? fun(opts: Flatten.PostOpenContext)
+---Called when a nested session is done waiting for the host.
 ---@field block_end? fun(opts: Flatten.BlockEndContext)
+---Executed when there are no files to open, to determine whether
+---to nest or not. The default implementation returns config.nest_if_no_args.
 ---@field no_files? fun():Flatten.NoFilesBehavior
+---Only executed on the guest, used to pass arbitrary data to the host.
 ---@field guest_data? fun():any
+---Executed on init on both host and guest. Used to determine the pipe path
+---for communication between the host and guest, and to determine whether
+---an nvim instance is a host or guest in the first place.
 ---@field pipe_path? fun():string?
 local Callbacks = {}
 
