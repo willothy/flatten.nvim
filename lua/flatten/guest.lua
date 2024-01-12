@@ -41,16 +41,22 @@ local function send_files(files, stdin)
     cwd = sanitize(cwd)
   end
 
+  local args = {
+    files = files,
+    response_pipe = server,
+    guest_cwd = cwd,
+    stdin = stdin,
+    argv = vim.v.argv,
+    force_block = force_block,
+  }
+
+  if config.callbacks.guest_data then
+    args.data = config.callbacks.guest_data(vim.v.argv)
+  end
+
   local call = string.format(
     [[return require('flatten.core').edit_files(%s)]],
-    vim.inspect({
-      files = files,
-      response_pipe = server,
-      guest_cwd = cwd,
-      stdin = stdin,
-      argv = vim.v.argv,
-      force_block = force_block,
-    })
+    vim.inspect(args)
   )
 
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do

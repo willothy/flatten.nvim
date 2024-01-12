@@ -122,10 +122,22 @@ M.config = {
     ---@param filetype string
     ---@param is_blocking boolean
     ---@param is_diff boolean
-    post_open = function(bufnr, winnr, filetype, is_blocking, is_diff) end,
+    ---@param data any?
+    post_open = function(
+      bufnr,
+      winnr,
+      filetype,
+      is_blocking,
+      is_diff,
+      data
+    )
+    end,
     ---Called when a nested session is done waiting for the host.
     ---@param filetype string
     block_end = function(filetype) end,
+    ---Only executed on the guest, used to pass arbitrary data to the host.
+    ---@return any
+    guest_data = function() end,
   },
   ---Specify blocking by filetype
   ---@type table<string, boolean>
