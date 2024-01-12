@@ -11,6 +11,14 @@ local Flatten = {}
 ---@field allow_cmd_passthrough Flatten.AllowCmdPassthrough
 ---@field nest_if_no_args Flatten.NestIfNoArgs
 
+---@class Flatten.PartialConfig :Flatten.Config
+---@field callbacks Flatten.Callbacks
+---@field window Flatten.WindowConfig?
+---@field integrations Flatten.Integrations?
+---@field block_for Flatten.BlockFor?
+---@field allow_cmd_passthrough Flatten.AllowCmdPassthrough?
+---@field nest_if_no_args Flatten.NestIfNoArgs?
+
 ---@class Flatten.EditFilesOptions
 ---@field files table          list of files passed into nested instance
 ---@field response_pipe string guest default socket
@@ -52,14 +60,14 @@ local Flatten = {}
 
 ---Configure window / opening behavior
 ---@class Flatten.WindowConfig
----@field open Flatten.OpenConfig
----@field diff Flatten.DiffConfig
----@field focus Flatten.FocusConfig
+---@field open? Flatten.OpenConfig
+---@field diff? Flatten.DiffConfig
+---@field focus? Flatten.FocusConfig
 
 ---Configure integrations with other programs / terminal emulators
 ---@class Flatten.Integrations
----@field kitty boolean
----@field wezterm boolean
+---@field kitty? boolean
+---@field wezterm? boolean
 
 ---Passed to callbacks that handle opening files
 ---@class Flatten.BufInfo
@@ -93,6 +101,14 @@ local Flatten = {}
 ---@field data any
 
 ---@class Flatten.Callbacks
+---@field should_block fun(argv: string[]):boolean
+---@field should_nest fun(host: integer):boolean
+---@field pre_open fun(opts: Flatten.PreOpenContext)
+---@field post_open fun(opts: Flatten.PostOpenContext)
+---@field block_end fun(opts: Flatten.BlockEndContext)
+---@field no_files fun():Flatten.NoFilesBehavior
+---@field guest_data fun():any
+---@field pipe_path fun():string?
 local Callbacks = {}
 
 ---Called to determine if a nested session should wait for the host to close the file.
@@ -227,7 +243,7 @@ function Flatten.is_guest()
   return is_guest
 end
 
----@param opts Flatten.Config?
+---@param opts Flatten.PartialConfig?
 Flatten.setup = function(opts)
   Flatten.config = vim.tbl_deep_extend("keep", opts or {}, Flatten.config)
 
