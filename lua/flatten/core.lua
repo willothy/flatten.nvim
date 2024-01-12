@@ -1,5 +1,6 @@
 local M = {}
 
+---@param guest_pipe string
 function M.unblock_guest(guest_pipe)
   local response_sock = vim.fn.sockconnect("pipe", guest_pipe, { rpc = true })
   vim.rpcnotify(
@@ -12,7 +13,30 @@ function M.unblock_guest(guest_pipe)
   vim.fn.chanclose(response_sock)
 end
 
-function M.notify_when_done(pipe, bufnr, callback, ft, data)
+---@param addr string
+---@param startserver boolean
+function M.try_address(addr, startserver)
+  if not addr:find("/") then
+    addr = ("%s/%s"):format(vim.fn.stdpath("run"), addr)
+  end
+  if vim.loop.fs_stat(addr) then
+    local ok, sock = require("flatten.guest").sockconnect(addr)
+    if ok then
+      return sock
+    end
+  elseif startserver then
+    local ok = pcall(vim.fn.serverstart, addr)
+    if ok then
+      return addr
+    end
+  end
+end
+
+---@param pipe string
+---@param bufnr integer
+---@param callback fun(opts: Flatten.BlockEndContext)
+---@param cx Flatten.BlockEndContext
+function M.notify_when_done(pipe, bufnr, callback, cx)
   vim.api.nvim_create_autocmd({ "QuitPre", "BufUnload", "BufDelete" }, {
     buffer = bufnr,
     once = true,
@@ -20,7 +44,7 @@ function M.notify_when_done(pipe, bufnr, callback, ft, data)
     callback = function()
       vim.api.nvim_del_augroup_by_id(M.augroup)
       M.unblock_guest(pipe)
-      callback(ft, data)
+      callback(cx)
     end,
   })
 end
@@ -80,16 +104,7 @@ function M.smart_open(focus)
   end
 end
 
----@class EditFilesOptions
----@field files table          list of files passed into nested instance
----@field response_pipe string guest default socket
----@field guest_cwd string     guest global cwd
----@field argv table           full list of options passed to the nested instance, see v:argv
----@field stdin table          stdin lines or {}
----@field force_block boolean  enable blocking
----@field data any?            arbitrary data passed to the host
-
----@param opts EditFilesOptions
+---@param opts Flatten.EditFilesOptions
 ---@return boolean
 function M.edit_files(opts)
   local files = opts.files
@@ -138,7 +153,9 @@ function M.edit_files(opts)
     end
   end
 
-  callbacks.pre_open(data)
+  callbacks.pre_open({
+    data = data,
+  })
 
   -- Open files
   if nfiles > 0 then
@@ -195,7 +212,12 @@ function M.edit_files(opts)
   if is_diff then
     local diff_open = config.window.diff
     if type(diff_open) == "function" then
-      winnr, bufnr = config.window.diff(files, argv, stdin_buf, guest_cwd)
+      winnr, bufnr = config.window.diff({
+        files = files,
+        argv = argv,
+        stdin_buf = stdin_buf,
+        guest_cwd = guest_cwd,
+      })
     else
       winnr = M.smart_open() --[[@as integer]] -- this will never return nil
       vim.api.nvim_set_current_win(winnr)
@@ -234,7 +256,13 @@ function M.edit_files(opts)
     winnr = winnr or vim.api.nvim_get_current_win()
     bufnr = bufnr or vim.api.nvim_get_current_buf()
   elseif type(open) == "function" then
-    bufnr, winnr = open(files, argv, stdin_buf, guest_cwd)
+    bufnr, winnr = open({
+      files = files,
+      argv = argv,
+      stdin_buf = stdin_buf,
+      guest_cwd = guest_cwd,
+      data = data,
+    })
     if winnr == nil and bufnr ~= nil then
       ---@diagnostic disable-next-line: cast-local-type
       winnr = vim.fn.bufwinid(bufnr)
@@ -270,8 +298,7 @@ function M.edit_files(opts)
 
   local ft
   if bufnr ~= nil then
-    ---@diagnostic disable-next-line: deprecated
-    ft = vim.api.nvim_buf_get_option(bufnr, "filetype")
+    ft = vim.bo[bufnr].filetype
   end
 
   local block = config.block_for[ft] or force_block
@@ -284,18 +311,26 @@ function M.edit_files(opts)
     end
   end
 
-  callbacks.post_open(
-    bufnr --[[@as integer]],
-    winnr --[[@as integer]],
-    ft,
-    block,
-    is_diff,
-    data
-  )
+  callbacks.post_open({
+    bufnr = bufnr --[[@as integer]],
+    winnr = winnr --[[@as integer]],
+    filetype = ft,
+    is_blocking = block,
+    is_diff = is_diff,
+    data = data,
+  })
 
   if block then
     M.augroup = vim.api.nvim_create_augroup("flatten_notify", { clear = true })
-    M.notify_when_done(response_pipe, bufnr, callbacks.block_end, ft, data)
+    M.notify_when_done(
+      response_pipe,
+      bufnr --[[@as integer]],
+      callbacks.block_end,
+      {
+        filetype = ft,
+        data = data,
+      }
+    )
   end
   return block
 end
