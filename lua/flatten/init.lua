@@ -11,23 +11,13 @@ local Flatten = {}
 ---@field allow_cmd_passthrough Flatten.AllowCmdPassthrough
 ---@field nest_if_no_args Flatten.NestIfNoArgs
 
----@class Flatten.PartialConfig: Flatten.Config
----@field callbacks? Flatten.PartialCallbacks
----@field window? Flatten.WindowConfig?
----@field integrations? Flatten.Integrations?
----@field block_for? Flatten.BlockFor?
----@field allow_cmd_passthrough? Flatten.AllowCmdPassthrough?
----@field nest_if_no_args? Flatten.NestIfNoArgs
-
----@class Flatten.PartialCallbacks: Flatten.Config
----@field should_block? fun(argv: string[]):boolean
----@field should_nest? fun(host: integer):boolean
----@field pre_open? fun(opts: Flatten.PreOpenContext)
----@field post_open? fun(opts: Flatten.PostOpenContext)
----@field block_end? fun(opts: Flatten.BlockEndContext)
----@field no_files? fun():Flatten.NoFilesBehavior
----@field guest_data? fun():any
----@field pipe_path? fun():string?
+---@class Flatten.PartialConfig :Flatten.Config
+---@field callbacks Flatten.Callbacks
+---@field window Flatten.WindowConfig?
+---@field integrations Flatten.Integrations?
+---@field block_for Flatten.BlockFor?
+---@field allow_cmd_passthrough Flatten.AllowCmdPassthrough?
+---@field nest_if_no_args Flatten.NestIfNoArgs?
 
 ---@class Flatten.EditFilesOptions
 ---@field files table          list of files passed into nested instance
@@ -110,15 +100,17 @@ local Flatten = {}
 ---@field filetype string
 ---@field data any
 
+---Callbacks to define custom behavior
 ---@class Flatten.Callbacks
+---Called to determine if a nested session should wait for the host to close the file.
 ---@field should_block fun(argv: string[]):boolean
 ---@field should_nest fun(host: integer):boolean
----@field pre_open fun(opts: Flatten.PreOpenContext)
----@field post_open fun(opts: Flatten.PostOpenContext)
----@field block_end fun(opts: Flatten.BlockEndContext)
----@field no_files fun():Flatten.NoFilesBehavior
----@field guest_data fun():any
----@field pipe_path fun():string?
+---@field pre_open? fun(opts: Flatten.PreOpenContext)
+---@field post_open? fun(opts: Flatten.PostOpenContext)
+---@field block_end? fun(opts: Flatten.BlockEndContext)
+---@field no_files? fun():Flatten.NoFilesBehavior
+---@field guest_data? fun():any
+---@field pipe_path? fun():string?
 local Callbacks = {}
 
 ---Called to determine if a nested session should wait for the host to close the file.
