@@ -12,7 +12,7 @@ function M.unblock_guest(guest_pipe)
   vim.fn.chanclose(response_sock)
 end
 
-function M.notify_when_done(pipe, bufnr, callback, ft)
+function M.notify_when_done(pipe, bufnr, callback, ft, data)
   vim.api.nvim_create_autocmd({ "QuitPre", "BufUnload", "BufDelete" }, {
     buffer = bufnr,
     once = true,
@@ -20,7 +20,7 @@ function M.notify_when_done(pipe, bufnr, callback, ft)
     callback = function()
       vim.api.nvim_del_augroup_by_id(M.augroup)
       M.unblock_guest(pipe)
-      callback(ft)
+      callback(ft, data)
     end,
   })
 end
@@ -87,6 +87,7 @@ end
 ---@field argv table           full list of options passed to the nested instance, see v:argv
 ---@field stdin table          stdin lines or {}
 ---@field force_block boolean  enable blocking
+---@field data any?            arbitrary data passed to the host
 
 ---@param opts EditFilesOptions
 ---@return boolean
@@ -101,6 +102,7 @@ function M.edit_files(opts)
   local callbacks = config.callbacks
   local focus_first = config.window.focus == "first"
   local open = config.window.open
+  local data = opts.data
 
   local nfiles = #files
   local stdin_lines = #stdin
@@ -136,7 +138,7 @@ function M.edit_files(opts)
     end
   end
 
-  callbacks.pre_open()
+  callbacks.pre_open(data)
 
   -- Open files
   if nfiles > 0 then
@@ -287,12 +289,13 @@ function M.edit_files(opts)
     winnr --[[@as integer]],
     ft,
     block,
-    is_diff
+    is_diff,
+    data
   )
 
   if block then
     M.augroup = vim.api.nvim_create_augroup("flatten_notify", { clear = true })
-    M.notify_when_done(response_pipe, bufnr, callbacks.block_end, ft)
+    M.notify_when_done(response_pipe, bufnr, callbacks.block_end, ft, data)
   end
   return block
 end
