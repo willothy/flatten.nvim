@@ -11,7 +11,7 @@ local Flatten = {}
 ---@field allow_cmd_passthrough Flatten.AllowCmdPassthrough
 ---@field nest_if_no_args Flatten.NestIfNoArgs
 
----@class Flatten.PartialConfig :Flatten.Config
+---@class Flatten.PartialConfig: Flatten.Config
 ---@field callbacks Flatten.Callbacks
 ---@field window Flatten.WindowConfig?
 ---@field integrations Flatten.Integrations?
@@ -60,13 +60,18 @@ local Flatten = {}
 
 ---Configure window / opening behavior
 ---@class Flatten.WindowConfig
+---Determines how normal buffers are opened
 ---@field open? Flatten.OpenConfig
+---Determines how diffs are opened
 ---@field diff? Flatten.DiffConfig
+---Determines which file to focus when opening multiple
 ---@field focus? Flatten.FocusConfig
 
 ---Configure integrations with other programs / terminal emulators
 ---@class Flatten.Integrations
+---Flatten nested instances in kitty tabs / panes
 ---@field kitty? boolean
+---Flatten nested instances in wezterm tabs / panes
 ---@field wezterm? boolean
 
 ---Passed to callbacks that handle opening files
