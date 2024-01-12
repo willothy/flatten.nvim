@@ -1,3 +1,4 @@
+---@diagnostic disable: unused-local
 ---@class Flatten
 local Flatten = {}
 
@@ -98,7 +99,6 @@ local Callbacks = {}
 ---@param argv string[]
 ---@return boolean
 function Callbacks.should_block(argv)
-  argv = argv -- make linter happy
   return false
 end
 
@@ -140,19 +140,19 @@ end
 ---Called before a nested session is opened.
 ---@param opts Flatten.PreOpenContext
 function Callbacks.pre_open(opts)
-  opts = opts -- make linter happy
+  return nil
 end
 
 ---Called after a nested session is opened.
 ---@param opts Flatten.PostOpenContext
 function Callbacks.post_open(opts)
-  opts = opts -- make linter happy
+  return nil
 end
 
 ---Called when a nested session is done waiting for the host.
 ---@param opts Flatten.BlockEndContext
 function Callbacks.block_end(opts)
-  opts = opts -- make linter happy
+  return nil
 end
 
 ---Executed when there are no files to open, to determine whether
