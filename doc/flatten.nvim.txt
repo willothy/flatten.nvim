@@ -7,6 +7,7 @@ Table of Contents                             *flatten.nvim-table-of-contents*
   - Installation                                   |flatten.nvim-installation|
   - Usage                                                 |flatten.nvim-usage|
   - Configuration                                 |flatten.nvim-configuration|
+  - Advanced configuration examples|flatten.nvim-advanced-configuration-examples|
   - About                                                 |flatten.nvim-about|
 
   **NOTE** There will soon be breaking changes on main with the release of 1.0.0.
@@ -116,98 +117,151 @@ DEFAULTS ~
 Flatten comes with the following defaults:
 
 >lua
-    ---Types:
-    --
-    -- Passed to callbacks that handle opening files
-    ---@alias BufInfo { fname: string, bufnr: buffer }
-    --
-    -- The first argument is a list of BufInfo tables representing the newly opened files.
-    -- The third argument is a single BufInfo table, only provided when a buffer is created from stdin.
-    --
-    -- IMPORTANT: For `block_for` to work, you need to return a buffer number OR a buffer number and a window number.
-    --            The `winnr` return value is not required, `vim.fn.bufwinid(bufnr)` is used if it is not provided.
-    --            The `filetype` of this buffer will determine whether block should happen or not.
-    --
-    ---@alias OpenHandler fun(files: BufInfo[], argv: string[], stdin_buf: BufInfo, guest_cwd: string):window, buffer
-    --
+    local flatten = require("flatten")
+    
     local config = {
       callbacks = {
-        ---Called to determine if a nested session should wait for the host to close the file.
-        ---@param argv table a list of all the arguments in the nested session
-        ---@return boolean
-        should_block = require("flatten").default_should_block,
-        ---If this returns true, the nested session will be opened.
-        ---If false, default behavior is used, and
-        ---config.nest_if_no_args is respected.
-        ---@type fun(host: channel):boolean
-        should_nest = require("flatten").default_should_nest,
-        ---Called before a nested session is opened.
-        pre_open = function() end,
-        ---Called after a nested session is opened.
-        ---@param bufnr buffer
-        ---@param winnr window
-        ---@param filetype string
-        ---@param is_blocking boolean
-        ---@param is_diff boolean
-        post_open = function(bufnr, winnr, filetype, is_blocking, is_diff) end,
-        ---Called when a nested session is done waiting for the host.
-        ---@param filetype string
-        block_end = function(filetype) end,
+        should_block = flatten.callbacks.should_block,
+        should_nest = flatten.callbacks.should_nest,
+        pre_open = flatten.callbacks.pre_open,
+        post_open = flatten.callbacks.post_open,
+        block_end = flatten.callbacks.block_end,
+        no_files = flatten.callbacks.no_files,
+        guest_data = flatten.callbacks.guest_data,
+        pipe_path = flatten.callbacks.pipe_path,
       },
-      -- <String, Bool> dictionary of filetypes that should be blocking
       block_for = {
         gitcommit = true,
         gitrebase = true,
       },
-      -- Command passthrough
-      allow_cmd_passthrough = true,
-      -- Allow a nested session to open if Neovim is opened without arguments
+      disable_cmd_passthrough = false,
       nest_if_no_args = false,
-      -- Window options
+      nest_if_cmds = false,
       window = {
-        -- Options:
-        -- current        -> open in current window (default)
-        -- alternate      -> open in alternate window (recommended)
-        -- tab            -> open in new tab
-        -- split          -> open in split
-        -- vsplit         -> open in vsplit
-        -- smart          -> smart open (avoids special buffers)
-        -- OpenHandler    -> allows you to handle file opening yourself (see Types)
-        --
         open = "current",
-        -- Options:
-        -- vsplit         -> opens files in diff vsplits
-        -- split          -> opens files in diff splits
-        -- tab_vsplit     -> creates a new tabpage, and opens diff vsplits
-        -- tab_split      -> creates a new tabpage, and opens diff splits
-        -- OpenHandler    -> allows you to handle file opening yourself (see Types)
         diff = "tab_vsplit",
-        -- Affects which file gets focused when opening multiple at once
-        -- Options:
-        -- "first"        -> open first file of new files (default)
-        -- "last"         -> open last file of new files
         focus = "first",
       },
-      -- Override this function to use a different socket to connect to the host
-      -- On the host side this can return nil or the socket address.
-      -- On the guest side this should return the socket address
-      -- or a non-zero channel id from `sockconnect`
-      -- flatten.nvim will detect if the address refers to this instance of nvim, to determine if this is a host or a guest
-      pipe_path = require("flatten").default_pipe_path,
-      -- The `default_pipe_path` will treat the first nvim instance within a single kitty/wezterm session as the host
-      -- You can configure this behaviour using the following opt-in integrations:
-      one_per = {
-        kitty = false, -- Flatten all instance in the current Kitty session
-        wezterm = false, -- Flatten all instance in the current Wezterm session
+      integrations = {
+        kitty = false,
+        wezterm = false,
       },
     }
 <
 
 
-ADVANCED CONFIGURATION EXAMPLES ~
+GENERAL ~
+
+- `block_for``table<string, boolean>`
+    - Defaultincludes `gitcommit` and `gitrebase` only.
+    - Add a filetype to always block the guest when opening a file of that type.
+- `nest_if_no_args``boolean` (default: `false`)
+    - If true, will nest if no arguments are passed to `nvim`.
+- `nest_if_cmds``boolean` (default: `false`)
+    - If true, will nest with no args even if a command is passed to `nvim`.
+- `disable_cmd_passthrough``boolean` (default: `false`)
+    - If true, will not pass commands to the host instance.
 
 
-TOGGLETERM
+INTEGRATIONS ~
+
+- `integrations.wezterm``boolean` (default: `false`)
+    - If true, [Wezterm] tabs running in the same working directory will be flattened into the same Neovim instance.
+- `integrations.kitty``boolean` (default: `false`)
+    - If true, [Kitty] tabs will be flattened into the same Neovim instance.
+    - Flatten-by-cwd not supported on Kitty yet, PRs welcome.
+
+
+WINDOW ~
+
+- `window.open``"current"` | `"alternate"` | `"split"` | `"vsplit"` | `"tab"` | `"smart"` | `Flatten.OpenHandler`
+    - The default is `"alternate"`.
+    - `"alternate"`Opens the file in the alternate (`<C-w>p`, |winnr()|) window.
+    - `"current"`Opens the file in the current window.
+    - `"vsplit"`Opens the file in a vertical split.
+    - `"split"`Opens the file in a horizontal split.
+    - `"tab"`Opens the file in a new tabpage.
+    - `"smart"`Automatically chooses between the alternate window, available other windows, and opening a new split.
+    - `Flatten.OpenHandler``fun(opts: Flatten.OpenContext): window, buffer?`
+        - A custom function that returns a window number and optionally a buffer.
+- `window.diff``"split"` | `"vsplit"` | `"tab_split"` | `"tab_vsplit"` | `Flatten.OpenHandler`
+    - The default is `"tab_vsplit"`.
+    - `"split"`Opens the file in a horizontal split.
+    - `"vsplit"`Opens the file in a vertical split.
+    - `"tab_split"`Opens the file in a new tabpage.
+    - `"tab_vsplit"`Opens the file in a new tabpage.
+    - `Flatten.OpenHandler``fun(opts: Flatten.OpenContext): window, buffer?`
+        - A custom function that returns a window number and optionally a buffer.
+    - `Flatten.OpenContext`
+        - `files``string[]`
+            - The list of files passed to the host.
+        - `argv``string[]`
+            - The full argv list from the _guest_ instance.
+        - `stdin_buf``Flatten.BufInfo?`
+            - Info about the stdin buffer, if one was created.
+        - `guest_cwd``string`
+            - The current working directory of the guest instance.
+        - `data``any`
+            - The data passed to the host from the `guest_data` callback.
+    - `Flatten.BufInfo`
+        - `fname``string`
+        - `bufnr``integer`
+- `window.focus``"first"` | `"last"`
+    - The default is `"first"`.
+
+
+CALLBACKS ~
+
+Defaults are in `flatten.callbacks`.
+
+- `callbacks.should_block``fun(argv: string[]): boolean`
+    - Should return `true` if the guest should wait for the host to close the file.
+- `callbacks.should_nest``fun(host: channel): boolean`
+    - Should return `true` if the guest should _not_ be flattened into the same Neovim instance as the host.
+        This is useful for customizing when files should be sent to a host instance and when they should be opened
+        in a new one.
+- `callbacks.pre_open``fun(opts: Flatten.PreOpenContext)`
+    - Called before opening files.
+    - `Flatten.PreOpenContext`
+        - `data``any`
+            - The data passed to the host from the `guest_data` callback.
+- `callbacks.post_open``fun(opts: Flatten.PostOpenContext)`
+    - Called after opening files.
+    - `Flatten.PostOpenContext`
+        - `bufnr``integer`
+            - The buffer number of the file that was opened.
+        - `winnr``integer`
+            - The window that the file was opened in.
+        - `filetype``string`
+            - The filetype of the file that was opened.
+        - `is_blocking``boolean`
+            - Whether the guest will be blocked while the host edits.
+        - `is_diff``boolean`
+            - Whether the files were opened in diff mode.
+        - `data``any`
+            - The data passed to the host from the `guest_data` callback.
+- `callbacks.block_end``fun(opts: Flatten.BlockEndContext)`
+    - Called when the host closes the file.
+    - `Flatten.BlockEndContext`
+        - `filetype``string`
+            - The filetype of the file that was opened.
+        - `data``any`
+            - The data passed to the host from the `guest_data` callback.
+- `callbacks.no_files``fun(opts: Flatten.NoFilesArgs): Flatten.NoFilesBehavior`
+    - Called when no files are passed to a guest instance, to determine what to do.
+    - `Flatten.NoFilesArgs`
+        - `argv``string[]`
+    - `Flatten.NoFilesBehavior``boolean` | `{ nest: boolean, block: boolean }`
+- `callbacks.guest_data``fun(): any`
+    - Called when the guest sends data to the host, to allow custom data to be passed to the host.
+- `callbacks.pipe_path``fun(): string`
+    - Called to determine whether an instance is a host or is a guest and should connect to a host.
+
+
+ADVANCED CONFIGURATION EXAMPLES *flatten.nvim-advanced-configuration-examples*
+
+
+TOGGLETERM ~
 
 If you use a toggleable terminal and don’t want the new buffer(s) to be
 opened in your current window, you can use the `alternate` mode instead of
@@ -301,7 +355,7 @@ git commit buffer on write:
 <
 
 
-PIPE PATH
+PIPE PATH ~
 
 Flatten now checks for kitty and wezterm by default, but this is how it works.
 If you use another terminal emulator or multiplexer, you can implement your
