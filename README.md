@@ -5,7 +5,7 @@
 </h1>
 
 <p align='center'>
-  <b>Open files and command output from `:term`, Wezterm and Kitty in your current neovim instance</b>
+  <b>Open files and command output from `:term`, <a href="https://github.com/wez/wezterm">Wezterm</a> and <a href="https://github.com/kovidgoyal/kitty">Kitty</a> in your current neovim instance</b>
 </p>
 
 <https://github.com/willothy/flatten.nvim/assets/38540736/b4e4e75a-9be2-478d-9098-7e421dd6d1d9>
@@ -13,6 +13,10 @@
 Config for demo [here](#advanced-configuration-examples) (autodelete gitcommit on write and toggling terminal are not defaults)
 
 <!-- panvimdoc-ignore-end -->
+
+> **NOTE**<br>
+> There will soon be breaking changes on main with the release of 1.0.0.<br>
+> See [#87](https://github.com/willothy/flatten.nvim/issues/87) for more info.
 
 ## Features
 
