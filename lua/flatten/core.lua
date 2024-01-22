@@ -104,6 +104,54 @@ function M.smart_open(focus)
   end
 end
 
+---Execute vimscript code
+---@param cmd string
+function M.exec(cmd)
+  if vim.api.nvim_exec2 then
+    -- nvim_exec2 only exists in nvim 0.9+
+    vim.api.nvim_exec2(cmd, {})
+  else
+    vim.api.nvim_exec(cmd, false)
+  end
+end
+
+---@param argv string[]
+---@return string[] pre_cmds, string[] post_cmds
+function M.parse_argv(argv)
+  local pre_cmds, post_cmds = {}, {}
+  local is_cmd = false
+  for _, arg in ipairs(argv) do
+    if is_cmd then
+      is_cmd = false
+      -- execute --cmd <cmd> commands
+      table.insert(pre_cmds, arg)
+    elseif arg:sub(1, 1) == "+" then
+      local cmd = string.sub(arg, 2, -1)
+      table.insert(post_cmds, cmd)
+    elseif arg == "--cmd" then
+      -- next arg is the actual command
+      is_cmd = true
+    end
+  end
+  return pre_cmds, post_cmds
+end
+
+function M.run_commands(opts)
+  local argv = opts.argv
+
+  local pre_cmds, post_cmds = M.parse_argv(argv)
+
+  for _, cmd in ipairs(pre_cmds) do
+    M.exec(cmd)
+  end
+
+  for _, cmd in ipairs(post_cmds) do
+    M.exec(cmd)
+  end
+
+  return false
+end
+
 ---@param opts Flatten.EditFilesOptions
 ---@return boolean
 function M.edit_files(opts)
@@ -123,39 +171,26 @@ function M.edit_files(opts)
   local stdin_lines = #stdin
 
   --- commands passed through with +<cmd>, to be executed after opening files
-  local postcmds = {}
+  local pre_cmds, post_cmds = M.parse_argv(argv)
 
-  if nfiles == 0 and stdin_lines == 0 then
-    -- If there are no new bufs, don't open anything
+  if
+    nfiles == 0
+    and stdin_lines == 0
+    and #pre_cmds == 0
+    and #post_cmds == 0
+  then
+    -- If there are no new bufs and no commands, don't open anything
     -- and tell the guest not to block
     return false
-  end
-
-  local is_cmd = false
-  if config.allow_cmd_passthrough then
-    for _, arg in ipairs(argv) do
-      if is_cmd then
-        is_cmd = false
-        -- execute --cmd <cmd> commands
-        if vim.api.nvim_exec2 then
-          -- nvim_exec2 only exists in nvim 0.9+
-          vim.api.nvim_exec2(arg, {})
-        else
-          vim.api.nvim_exec(arg, false)
-        end
-      elseif arg:sub(1, 1) == "+" then
-        local cmd = string.sub(arg, 2, -1)
-        table.insert(postcmds, cmd)
-      elseif arg == "--cmd" then
-        -- next arg is the actual command
-        is_cmd = true
-      end
-    end
   end
 
   callbacks.pre_open({
     data = data,
   })
+
+  for _, cmd in ipairs(pre_cmds) do
+    M.exec(cmd)
+  end
 
   -- Open files
   if nfiles > 0 then
@@ -296,43 +331,48 @@ function M.edit_files(opts)
     return false
   end
 
-  local ft
-  if bufnr ~= nil then
-    ft = vim.bo[bufnr].filetype
-  end
+  if bufnr then
+    local ft = vim.bo[bufnr].filetype
 
-  local block = config.block_for[ft] or force_block
+    local block = config.block_for[ft] or force_block
 
-  for _, cmd in ipairs(postcmds) do
-    if vim.api.nvim_exec2 then
-      vim.api.nvim_exec2(cmd, {})
-    else
-      vim.api.nvim_exec(cmd, false)
+    for _, cmd in ipairs(post_cmds) do
+      if vim.api.nvim_exec2 then
+        vim.api.nvim_exec2(cmd, {})
+      else
+        vim.api.nvim_exec(cmd, false)
+      end
     end
+
+    callbacks.post_open({
+      bufnr = bufnr --[[@as integer]],
+      winnr = winnr --[[@as integer]],
+      filetype = ft,
+      is_blocking = block,
+      is_diff = is_diff,
+      data = data,
+    })
+
+    if block then
+      M.augroup =
+        vim.api.nvim_create_augroup("flatten_notify", { clear = true })
+      M.notify_when_done(
+        response_pipe,
+        bufnr --[[@as integer]],
+        callbacks.block_end,
+        {
+          filetype = ft,
+          data = data,
+        }
+      )
+    end
+    return block
   end
 
-  callbacks.post_open({
-    bufnr = bufnr --[[@as integer]],
-    winnr = winnr --[[@as integer]],
-    filetype = ft,
-    is_blocking = block,
-    is_diff = is_diff,
-    data = data,
-  })
-
-  if block then
-    M.augroup = vim.api.nvim_create_augroup("flatten_notify", { clear = true })
-    M.notify_when_done(
-      response_pipe,
-      bufnr --[[@as integer]],
-      callbacks.block_end,
-      {
-        filetype = ft,
-        data = data,
-      }
-    )
+  for _, cmd in ipairs(post_cmds) do
+    M.exec(cmd)
   end
-  return block
+  return false
 end
 
 return M
