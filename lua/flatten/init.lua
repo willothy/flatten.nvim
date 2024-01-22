@@ -1,5 +1,7 @@
 ---@diagnostic disable: unused-local, redundant-return
 ---@class Flatten
+---@field callbacks Flatten.Callbacks
+---@field config Flatten.Config
 local Flatten = {}
 
 ---Top-level config table
@@ -133,6 +135,8 @@ local Flatten = {}
 ---an nvim instance is a host or guest in the first place.
 ---@field pipe_path? fun():string?
 local Callbacks = {}
+
+Flatten.callbacks = Callbacks
 
 ---Called to determine if a nested session should wait for the host to close the file.
 ---@param argv string[]
