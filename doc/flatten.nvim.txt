@@ -1,4 +1,4 @@
-*flatten.nvim.txt*        For NVIM v0.8.0        Last change: 2023 December 09
+*flatten.nvim.txt*         For NVIM v0.8.0        Last change: 2024 January 22
 
 ==============================================================================
 Table of Contents                             *flatten.nvim-table-of-contents*
@@ -8,6 +8,9 @@ Table of Contents                             *flatten.nvim-table-of-contents*
   - Usage                                                 |flatten.nvim-usage|
   - Configuration                                 |flatten.nvim-configuration|
   - About                                                 |flatten.nvim-about|
+
+  **NOTE** There will soon be breaking changes on main with the release of 1.0.0.
+  See #87 <https://github.com/willothy/flatten.nvim/issues/87> for more info.
 
 FEATURES                                               *flatten.nvim-features*
 
