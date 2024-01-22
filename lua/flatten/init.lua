@@ -1,4 +1,4 @@
----@diagnostic disable: unused-local
+---@diagnostic disable: unused-local, redundant-return
 ---@class Flatten
 local Flatten = {}
 
@@ -105,6 +105,10 @@ local Flatten = {}
 ---@field filetype string
 ---@field data any
 
+---Passed into the no_files callback from the guest (cb is run on the host)
+---@class Flatten.NoFilesArgs
+---@field argv string[]
+
 ---Callbacks to define custom behavior
 ---@class Flatten.Callbacks
 ---Called to determine if a nested session should wait for the host to close the file.
@@ -121,7 +125,7 @@ local Flatten = {}
 ---@field block_end? fun(opts: Flatten.BlockEndContext)
 ---Executed when there are no files to open, to determine whether
 ---to nest or not. The default implementation returns config.nest_if_no_args.
----@field no_files? fun():Flatten.NoFilesBehavior
+---@field no_files? fun(opts: Flatten.NoFilesArgs):Flatten.NoFilesBehavior
 ---Only executed on the guest, used to pass arbitrary data to the host.
 ---@field guest_data? fun():any
 ---Executed on init on both host and guest. Used to determine the pipe path
@@ -175,26 +179,36 @@ end
 ---Called before a nested session is opened.
 ---@param opts Flatten.PreOpenContext
 function Callbacks.pre_open(opts)
-  return nil
+  return
 end
 
 ---Called after a nested session is opened.
 ---@param opts Flatten.PostOpenContext
 function Callbacks.post_open(opts)
-  return nil
+  return
 end
 
 ---Called when a nested session is done waiting for the host.
 ---@param opts Flatten.BlockEndContext
 function Callbacks.block_end(opts)
-  return nil
+  return
 end
 
 ---Executed when there are no files to open, to determine whether
 ---to nest or not. The default implementation returns config.nest_if_no_args.
+---@param opts { argv: string[] }
 ---@return Flatten.NoFilesBehavior
-function Callbacks.no_files()
-  return Flatten.config.nest_if_no_args
+function Callbacks.no_files(opts)
+  if not Flatten.config.nest_if_no_args then
+    return false
+  end
+
+  local pre_cmds, post_cmds = require("flatten.core").parse_argv(opts.argv)
+  if #pre_cmds > 0 or #post_cmds > 0 then
+    return false
+  end
+
+  return true
 end
 
 ---Only executed on the guest, used to pass arbitrary data to the host.

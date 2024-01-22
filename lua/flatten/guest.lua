@@ -26,7 +26,7 @@ function M.maybe_block(block)
   end
 end
 
-local function send_files(files, stdin)
+function M.send_files(files, stdin)
   if #files < 1 and #stdin < 1 then
     return
   end
@@ -66,6 +66,28 @@ local function send_files(files, stdin)
   M.maybe_block(block)
 end
 
+function M.send_commands()
+  local server = vim.fn.fnameescape(vim.v.servername)
+  local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1) --[[@as string]])
+  if is_windows() then
+    server = sanitize(server)
+    cwd = sanitize(cwd)
+  end
+
+  local args = {
+    response_pipe = server,
+    guest_cwd = cwd,
+    argv = vim.v.argv,
+  }
+
+  local call = string.format(
+    [[return require('flatten.core').run_commands(%s)]],
+    vim.inspect(args)
+  )
+
+  M.exec_on_host(call)
+end
+
 function M.sockconnect(host_pipe)
   return pcall(vim.fn.sockconnect, "pipe", host_pipe, { rpc = true })
 end
@@ -95,7 +117,7 @@ function M.init(host_pipe)
     pattern = "*",
     callback = function()
       local readlines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
-      send_files(files, readlines)
+      M.send_files(files, readlines)
     end,
   })
 
@@ -137,7 +159,11 @@ function M.init(host_pipe)
 
         if config.callbacks.no_files then
           local result = M.exec_on_host(
-            "return require'flatten'.config.callbacks.no_files()"
+            ("return require'flatten'.config.callbacks.no_files(%s)"):format(
+              vim.inspect({
+                argv = vim.v.argv,
+              })
+            )
           )
           if type(result) == "boolean" then
             should_nest = result
@@ -149,10 +175,11 @@ function M.init(host_pipe)
         if should_nest == true then
           return
         end
+        M.send_commands()
         M.maybe_block(should_block)
       end
 
-      send_files(files, {})
+      M.send_files(files, {})
     end,
   })
 end
