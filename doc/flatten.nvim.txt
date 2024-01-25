@@ -1,4 +1,4 @@
-*flatten.nvim.txt*         For NVIM v0.8.0        Last change: 2024 January 22
+*flatten.nvim.txt*         For NVIM v0.8.0        Last change: 2024 January 25
 
 ==============================================================================
 Table of Contents                             *flatten.nvim-table-of-contents*
