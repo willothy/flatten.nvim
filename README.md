@@ -51,7 +51,7 @@ require("lazy").setup({
 })
 ```
 
-### [`nvim-neorocks/rocks.nvim](https://github.com/nvim-neorocks/rocks.nvim`) (via [LuaRocks](https://luarocks.org/modules/willothy/flatten.nvim))
+### [`nvim-neorocks/rocks.nvim`](https://github.com/nvim-neorocks/rocks.nvim) (via [LuaRocks](https://luarocks.org/modules/willothy/flatten.nvim))
 
 ```vim
 :Rocks install flatten.nvim
