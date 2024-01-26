@@ -27,7 +27,8 @@ FEATURES                                               *flatten.nvim-features*
 
 INSTALLATION                                       *flatten.nvim-installation*
 
-With `lazy.nvim`
+
+FOLKE/LAZY.NVIM ~
 
 >lua
     require("lazy").setup({
@@ -41,6 +42,21 @@ With `lazy.nvim`
         priority = 1001,
       },
       --- ...
+    })
+<
+
+
+[NVIM-NEOROCKS/ROCKS.NVIM](HTTPS://GITHUB.COM/NVIM-NEOROCKS/ROCKS.NVIM) (VIA LUAROCKS) ~
+
+>vim
+    :Rocks install flatten.nvim
+<
+
+Then, in `plugins/flatten.lua`
+
+>lua
+    require("flatten").setup({
+      -- your config
     })
 <
 
