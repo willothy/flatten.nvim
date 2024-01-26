@@ -1,5 +1,7 @@
 <!-- panvimdoc-ignore-start -->
 
+[![LuaRocks](https://img.shields.io/luarocks/v/willothy/flatten.nvim?logo=lua&color=blue)](https://luarocks.org/modules/willothy/flatten.nvim)
+
 <h1 align='center'>
   flatten.nvim
 </h1>
@@ -7,8 +9,6 @@
 <p align='center'>
   <b>Open files and command output from `:term`, <a href="https://github.com/wez/wezterm">Wezterm</a> and <a href="https://github.com/kovidgoyal/kitty">Kitty</a> in your current neovim instance</b>
 </p>
-
-[![LuaRocks](https://img.shields.io/luarocks/v/willothy/flatten.nvim?logo=lua&color=blue)](https://luarocks.org/modules/willothy/flatten.nvim)
 
 <https://github.com/willothy/flatten.nvim/assets/38540736/b4e4e75a-9be2-478d-9098-7e421dd6d1d9>
 
