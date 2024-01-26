@@ -141,7 +141,7 @@ function M.edit_files(opts)
   -- Open files
   if nfiles > 0 then
     for i, fname in ipairs(files) do
-      local is_absolute = false
+      local is_absolute
       if vim.fn.has("win32") == 1 then
         is_absolute = string.find(fname, "^%a:") ~= nil
       else
