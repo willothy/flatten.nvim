@@ -1,0 +1,33 @@
+name: luarocks
+
+on:
+  push:
+    tags:
+      - "*"
+  # Will test a local install without uploading to luarocks
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  luarocks-upload:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Luarocks upload
+        uses: nvim-neorocks/luarocks-tag-release@v5
+        with:
+          name: flatten.nvim
+          labels: |
+            neovim
+          summary: Remotely open files and command output from :term, Wezterm and Kitty in your current Neovim instance.
+          detailed_description: |
+            Flatten.nvim leverages Neovim's builtin RPC to allow seamless remote opening of files
+            and command output from other terminal sessions, similar to the functionality of IDEs
+            and vsc*de.
+
+            Edit git commits, use existing nvim sessions as your $VISUAL editor for edit-exec,
+            and more.
+          license: MIT
+
+        env:
+          LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API_KEY }}
