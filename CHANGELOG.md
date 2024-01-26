@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.1](https://github.com/willothy/flatten.nvim/compare/v0.5.0...v0.5.1) (2024-01-26)
+
+
+### Bug Fixes
+
+* check int return value of `vim.fn.has` ([#92](https://github.com/willothy/flatten.nvim/issues/92)) ([0338960](https://github.com/willothy/flatten.nvim/commit/0338960b47e01f7295f89ebef60a7d45e9f2b3e9))
+* handle absolute paths on windows ([#90](https://github.com/willothy/flatten.nvim/issues/90)) ([d1fff3c](https://github.com/willothy/flatten.nvim/commit/d1fff3c380ff93f55f27d02168cc7952cc473f8c))
+* **lint:** remove unused initializer for is_absolute ([1153797](https://github.com/willothy/flatten.nvim/commit/11537971a22cd03456dcc7b38efea5df11d90cfd))
+
 ## [0.5.0](https://github.com/willothy/flatten.nvim/compare/v0.4.1...v0.5.0) (2023-11-28)
 
 
