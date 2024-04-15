@@ -1,5 +1,6 @@
 local M = {}
 
+---@param guest_pipe string
 function M.unblock_guest(guest_pipe)
   local response_sock = vim.fn.sockconnect("pipe", guest_pipe, { rpc = true })
   vim.rpcnotify(
@@ -12,7 +13,30 @@ function M.unblock_guest(guest_pipe)
   vim.fn.chanclose(response_sock)
 end
 
-function M.notify_when_done(pipe, bufnr, callback, ft)
+---@param addr string
+---@param startserver boolean
+function M.try_address(addr, startserver)
+  if not addr:find("/") then
+    addr = ("%s/%s"):format(vim.fn.stdpath("run"), addr)
+  end
+  if vim.loop.fs_stat(addr) then
+    local ok, sock = require("flatten.guest").sockconnect(addr)
+    if ok then
+      return sock
+    end
+  elseif startserver then
+    local ok = pcall(vim.fn.serverstart, addr)
+    if ok then
+      return addr
+    end
+  end
+end
+
+---@param pipe string
+---@param bufnr integer
+---@param callback fun(opts: Flatten.BlockEndContext)
+---@param cx Flatten.BlockEndContext
+function M.notify_when_done(pipe, bufnr, callback, cx)
   vim.api.nvim_create_autocmd({ "QuitPre", "BufUnload", "BufDelete" }, {
     buffer = bufnr,
     once = true,
@@ -20,7 +44,7 @@ function M.notify_when_done(pipe, bufnr, callback, ft)
     callback = function()
       vim.api.nvim_del_augroup_by_id(M.augroup)
       M.unblock_guest(pipe)
-      callback(ft)
+      callback(cx)
     end,
   })
 end
@@ -80,15 +104,55 @@ function M.smart_open(focus)
   end
 end
 
----@class EditFilesOptions
----@field files table          list of files passed into nested instance
----@field response_pipe string guest default socket
----@field guest_cwd string     guest global cwd
----@field argv table           full list of options passed to the nested instance, see v:argv
----@field stdin table          stdin lines or {}
----@field force_block boolean  enable blocking
+---Execute vimscript code
+---@param cmd string
+function M.exec(cmd)
+  if vim.api.nvim_exec2 then
+    -- nvim_exec2 only exists in nvim 0.9+
+    vim.api.nvim_exec2(cmd, {})
+  else
+    vim.api.nvim_exec(cmd, false)
+  end
+end
 
----@param opts EditFilesOptions
+---@param argv string[]
+---@return string[] pre_cmds, string[] post_cmds
+function M.parse_argv(argv)
+  local pre_cmds, post_cmds = {}, {}
+  local is_cmd = false
+  for _, arg in ipairs(argv) do
+    if is_cmd then
+      is_cmd = false
+      -- execute --cmd <cmd> commands
+      table.insert(pre_cmds, arg)
+    elseif arg:sub(1, 1) == "+" then
+      local cmd = string.sub(arg, 2, -1)
+      table.insert(post_cmds, cmd)
+    elseif arg == "--cmd" then
+      -- next arg is the actual command
+      is_cmd = true
+    end
+  end
+  return pre_cmds, post_cmds
+end
+
+function M.run_commands(opts)
+  local argv = opts.argv
+
+  local pre_cmds, post_cmds = M.parse_argv(argv)
+
+  for _, cmd in ipairs(pre_cmds) do
+    M.exec(cmd)
+  end
+
+  for _, cmd in ipairs(post_cmds) do
+    M.exec(cmd)
+  end
+
+  return false
+end
+
+---@param opts Flatten.EditFilesOptions
 ---@return boolean
 function M.edit_files(opts)
   local files = opts.files
@@ -101,42 +165,32 @@ function M.edit_files(opts)
   local callbacks = config.callbacks
   local focus_first = config.window.focus == "first"
   local open = config.window.open
+  local data = opts.data
 
   local nfiles = #files
   local stdin_lines = #stdin
 
   --- commands passed through with +<cmd>, to be executed after opening files
-  local postcmds = {}
+  local pre_cmds, post_cmds = M.parse_argv(argv)
 
-  if nfiles == 0 and stdin_lines == 0 then
-    -- If there are no new bufs, don't open anything
+  if
+    nfiles == 0
+    and stdin_lines == 0
+    and #pre_cmds == 0
+    and #post_cmds == 0
+  then
+    -- If there are no new bufs and no commands, don't open anything
     -- and tell the guest not to block
     return false
   end
 
-  local is_cmd = false
-  if config.allow_cmd_passthrough then
-    for _, arg in ipairs(argv) do
-      if is_cmd then
-        is_cmd = false
-        -- execute --cmd <cmd> commands
-        if vim.api.nvim_exec2 then
-          -- nvim_exec2 only exists in nvim 0.9+
-          vim.api.nvim_exec2(arg, {})
-        else
-          vim.api.nvim_exec(arg, false)
-        end
-      elseif arg:sub(1, 1) == "+" then
-        local cmd = string.sub(arg, 2, -1)
-        table.insert(postcmds, cmd)
-      elseif arg == "--cmd" then
-        -- next arg is the actual command
-        is_cmd = true
-      end
-    end
-  end
+  callbacks.pre_open({
+    data = data,
+  })
 
-  callbacks.pre_open()
+  for _, cmd in ipairs(pre_cmds) do
+    M.exec(cmd)
+  end
 
   -- Open files
   if nfiles > 0 then
@@ -193,7 +247,12 @@ function M.edit_files(opts)
   if is_diff then
     local diff_open = config.window.diff
     if type(diff_open) == "function" then
-      winnr, bufnr = config.window.diff(files, argv, stdin_buf, guest_cwd)
+      winnr, bufnr = config.window.diff({
+        files = files,
+        argv = argv,
+        stdin_buf = stdin_buf,
+        guest_cwd = guest_cwd,
+      })
     else
       winnr = M.smart_open() --[[@as integer]] -- this will never return nil
       vim.api.nvim_set_current_win(winnr)
@@ -232,7 +291,13 @@ function M.edit_files(opts)
     winnr = winnr or vim.api.nvim_get_current_win()
     bufnr = bufnr or vim.api.nvim_get_current_buf()
   elseif type(open) == "function" then
-    bufnr, winnr = open(files, argv, stdin_buf, guest_cwd)
+    bufnr, winnr = open({
+      files = files,
+      argv = argv,
+      stdin_buf = stdin_buf,
+      guest_cwd = guest_cwd,
+      data = data,
+    })
     if winnr == nil and bufnr ~= nil then
       ---@diagnostic disable-next-line: cast-local-type
       winnr = vim.fn.bufwinid(bufnr)
@@ -266,35 +331,48 @@ function M.edit_files(opts)
     return false
   end
 
-  local ft
-  if bufnr ~= nil then
-    ---@diagnostic disable-next-line: deprecated
-    ft = vim.api.nvim_buf_get_option(bufnr, "filetype")
-  end
+  if bufnr then
+    local ft = vim.bo[bufnr].filetype
 
-  local block = config.block_for[ft] or force_block
+    local block = config.block_for[ft] or force_block
 
-  for _, cmd in ipairs(postcmds) do
-    if vim.api.nvim_exec2 then
-      vim.api.nvim_exec2(cmd, {})
-    else
-      vim.api.nvim_exec(cmd, false)
+    for _, cmd in ipairs(post_cmds) do
+      if vim.api.nvim_exec2 then
+        vim.api.nvim_exec2(cmd, {})
+      else
+        vim.api.nvim_exec(cmd, false)
+      end
     end
+
+    callbacks.post_open({
+      bufnr = bufnr --[[@as integer]],
+      winnr = winnr --[[@as integer]],
+      filetype = ft,
+      is_blocking = block,
+      is_diff = is_diff,
+      data = data,
+    })
+
+    if block then
+      M.augroup =
+        vim.api.nvim_create_augroup("flatten_notify", { clear = true })
+      M.notify_when_done(
+        response_pipe,
+        bufnr --[[@as integer]],
+        callbacks.block_end,
+        {
+          filetype = ft,
+          data = data,
+        }
+      )
+    end
+    return block
   end
 
-  callbacks.post_open(
-    bufnr --[[@as integer]],
-    winnr --[[@as integer]],
-    ft,
-    block,
-    is_diff
-  )
-
-  if block then
-    M.augroup = vim.api.nvim_create_augroup("flatten_notify", { clear = true })
-    M.notify_when_done(response_pipe, bufnr, callbacks.block_end, ft)
+  for _, cmd in ipairs(post_cmds) do
+    M.exec(cmd)
   end
-  return block
+  return false
 end
 
 return M

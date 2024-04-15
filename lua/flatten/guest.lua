@@ -26,7 +26,7 @@ function M.maybe_block(block)
   end
 end
 
-local function send_files(files, stdin)
+function M.send_files(files, stdin)
   if #files < 1 and #stdin < 1 then
     return
   end
@@ -41,16 +41,22 @@ local function send_files(files, stdin)
     cwd = sanitize(cwd)
   end
 
+  local args = {
+    files = files,
+    response_pipe = server,
+    guest_cwd = cwd,
+    stdin = stdin,
+    argv = vim.v.argv,
+    force_block = force_block,
+  }
+
+  if config.callbacks.guest_data then
+    args.data = config.callbacks.guest_data()
+  end
+
   local call = string.format(
     [[return require('flatten.core').edit_files(%s)]],
-    vim.inspect({
-      files = files,
-      response_pipe = server,
-      guest_cwd = cwd,
-      stdin = stdin,
-      argv = vim.v.argv,
-      force_block = force_block,
-    })
+    vim.inspect(args)
   )
 
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
@@ -58,6 +64,28 @@ local function send_files(files, stdin)
   end
   local block = M.exec_on_host(call) or force_block
   M.maybe_block(block)
+end
+
+function M.send_commands()
+  local server = vim.fn.fnameescape(vim.v.servername)
+  local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1) --[[@as string]])
+  if is_windows() then
+    server = sanitize(server)
+    cwd = sanitize(cwd)
+  end
+
+  local args = {
+    response_pipe = server,
+    guest_cwd = cwd,
+    argv = vim.v.argv,
+  }
+
+  local call = string.format(
+    [[return require('flatten.core').run_commands(%s)]],
+    vim.inspect(args)
+  )
+
+  M.exec_on_host(call)
 end
 
 function M.sockconnect(host_pipe)
@@ -89,7 +117,7 @@ function M.init(host_pipe)
     pattern = "*",
     callback = function()
       local readlines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
-      send_files(files, readlines)
+      M.send_files(files, readlines)
     end,
   })
 
@@ -131,22 +159,27 @@ function M.init(host_pipe)
 
         if config.callbacks.no_files then
           local result = M.exec_on_host(
-            "return require'flatten'.config.callbacks.no_files()"
+            ("return require'flatten'.config.callbacks.no_files(%s)"):format(
+              vim.inspect({
+                argv = vim.v.argv,
+              })
+            )
           )
           if type(result) == "boolean" then
             should_nest = result
           elseif type(result) == "table" then
-            should_nest = result.nest_if_no_args
-            should_block = result.should_block
+            should_nest = result.nest
+            should_block = result.block
           end
         end
         if should_nest == true then
           return
         end
+        M.send_commands()
         M.maybe_block(should_block)
       end
 
-      send_files(files, {})
+      M.send_files(files, {})
     end,
   })
 end
