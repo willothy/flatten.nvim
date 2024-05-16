@@ -26,13 +26,13 @@ function M.maybe_block(block)
   end
 end
 
-local function send_files(files, stdin)
+local function send_files(files, stdin, argv)
   if #files < 1 and #stdin < 1 then
     return
   end
 
   local force_block = vim.g.flatten_wait ~= nil
-    or config.callbacks.should_block(vim.v.argv)
+    or config.callbacks.should_block(argv)
 
   local server = vim.fn.fnameescape(vim.v.servername)
   local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1) --[[@as string]])
@@ -48,7 +48,7 @@ local function send_files(files, stdin)
       response_pipe = server,
       guest_cwd = cwd,
       stdin = stdin,
-      argv = vim.v.argv,
+      argv = argv,
       force_block = force_block,
     })
   )
@@ -64,6 +64,31 @@ function M.sockconnect(host_pipe)
   return pcall(vim.fn.sockconnect, "pipe", host_pipe, { rpc = true })
 end
 
+local function find_vimleave(argv, callback)
+  local remove = {}
+  for i, arg in ipairs(argv) do
+    if
+      vim.startswith(arg, "+autocmd VimLeave")
+      or vim.startswith(arg, "+autocmd VimLeavePre")
+      or vim.startswith(arg, "autocmd VimLeave")
+      or vim.startswith(arg, "autocmd VimLeavePre")
+    then
+      local plus = vim.startswith(arg, "+")
+      local cmd = plus and arg:sub(2) or arg
+      if callback(cmd) then
+        remove[#remove + 1] = i
+        -- preceeded by --cmd
+        if not plus then
+          remove[#remove + 1] = i - 1
+        end
+      end
+    end
+  end
+  for i, id in ipairs(remove) do
+    table.remove(argv, id - i + 1)
+  end
+end
+
 function M.init(host_pipe)
   -- Connect to host process
   if type(host_pipe) == "number" then
@@ -73,6 +98,10 @@ function M.init(host_pipe)
     ok, host = M.sockconnect(host_pipe)
     -- Return on connection error
     if not ok then
+      vim.notify(
+        "Socket error connecting to flatten.nvim host: " .. host_pipe,
+        vim.log.levels.ERROR
+      )
       return
     end
   end
@@ -85,11 +114,18 @@ function M.init(host_pipe)
   local files = vim.fn.argv()
   local nfiles = #files
 
+  local argv = vim.v.argv
+  find_vimleave(argv, function(arg)
+    vim.g.flatten_wait = true
+    require("flatten.utils").exec_cmd(arg)
+    return true -- remove
+  end)
+
   vim.api.nvim_create_autocmd("StdinReadPost", {
     pattern = "*",
     callback = function()
       local readlines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
-      send_files(files, readlines)
+      send_files(files, readlines, argv)
     end,
   })
 
@@ -146,7 +182,7 @@ function M.init(host_pipe)
         M.maybe_block(should_block)
       end
 
-      send_files(files, {})
+      send_files(files, {}, argv)
     end,
   })
 end

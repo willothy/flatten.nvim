@@ -80,6 +80,8 @@ function M.smart_open(focus)
   end
 end
 
+local exec_cmd = require'flatten.utils'.exec_cmd
+
 ---@class EditFilesOptions
 ---@field files table          list of files passed into nested instance
 ---@field response_pipe string guest default socket
@@ -120,12 +122,7 @@ function M.edit_files(opts)
       if is_cmd then
         is_cmd = false
         -- execute --cmd <cmd> commands
-        if vim.api.nvim_exec2 then
-          -- nvim_exec2 only exists in nvim 0.9+
-          vim.api.nvim_exec2(arg, {})
-        else
-          vim.api.nvim_exec(arg, false)
-        end
+        exec_cmd(arg)
       elseif arg:sub(1, 1) == "+" then
         local cmd = string.sub(arg, 2, -1)
         table.insert(postcmds, cmd)
@@ -275,11 +272,7 @@ function M.edit_files(opts)
   local block = config.block_for[ft] or force_block
 
   for _, cmd in ipairs(postcmds) do
-    if vim.api.nvim_exec2 then
-      vim.api.nvim_exec2(cmd, {})
-    else
-      vim.api.nvim_exec(cmd, false)
-    end
+    exec_cmd(cmd)
   end
 
   callbacks.post_open(
