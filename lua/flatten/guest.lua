@@ -73,10 +73,12 @@ local function find_vimleave(argv, callback)
       or vim.startswith(arg, "autocmd VimLeave")
       or vim.startswith(arg, "autocmd VimLeavePre")
     then
-      if callback(arg) then
+      local plus = vim.startswith(arg, "+")
+      local cmd = plus and arg:sub(2) or arg
+      if callback(cmd) then
         remove[#remove + 1] = i
         -- preceeded by --cmd
-        if not vim.startswith(arg, "+") then
+        if not plus then
           remove[#remove + 1] = i - 1
         end
       end
@@ -115,13 +117,7 @@ function M.init(host_pipe)
   local argv = vim.v.argv
   find_vimleave(argv, function(arg)
     vim.g.flatten_wait = true
-    local cmd = string.sub(arg, 2, -1)
-    cmd = cmd:gsub("\n", "\n\\")
-    if vim.api.nvim_exec2 then
-      vim.api.nvim_exec2(cmd, {})
-    else
-      vim.api.nvim_exec(cmd, false)
-    end
+    require("flatten.utils").exec_cmd(arg)
     return true -- remove
   end)
 
