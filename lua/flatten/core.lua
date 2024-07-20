@@ -2,11 +2,10 @@ local M = {}
 
 function M.unblock_guest(guest_pipe)
   local response_sock = vim.fn.sockconnect("pipe", guest_pipe, { rpc = true })
-  vim.rpcnotify(
+  vim.rpcrequest(
     response_sock,
     "nvim_exec_lua",
-    ---@diagnostic disable-next-line: param-type-mismatch
-    "vim.cmd.qa({ bang = true })",
+    "vim.defer_fn(function() vim.cmd.qa({ bang = true }) end, 25)",
     {}
   )
   vim.fn.chanclose(response_sock)
