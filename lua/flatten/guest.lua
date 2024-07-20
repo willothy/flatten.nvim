@@ -16,11 +16,25 @@ function M.exec_on_host(call, opts)
   return vim.rpcrequest(host, "nvim_exec_lua", call, opts or {})
 end
 
+local function disable_ui()
+  vim.go.laststatus = 0
+  vim.go.showtabline = 0
+  vim.go.winbar = ''
+  vim.wo.cursorline = false
+  vim.wo.cursorcolumn = false
+  vim.wo.colorcolumn = ''
+  vim.wo.number = false
+  vim.wo.relativenumber = false
+  vim.wo.signcolumn = 'no'
+  vim.wo.foldcolumn = '0'
+end
+
 function M.maybe_block(block)
   if not block then
     vim.cmd.qa({ bang = true })
   end
   vim.fn.chanclose(host)
+  disable_ui()
   while true do
     vim.cmd.sleep(1)
   end
