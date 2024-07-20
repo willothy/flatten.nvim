@@ -22,7 +22,7 @@ function M.maybe_block(block)
   end
   vim.fn.chanclose(host)
   while true do
-    vim.cmd.sleep(1)
+    vim.cmd.sleep(10)
   end
 end
 
