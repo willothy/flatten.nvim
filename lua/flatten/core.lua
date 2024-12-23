@@ -2,7 +2,13 @@ local M = {}
 
 ---@param guest_pipe string
 function M.unblock_guest(guest_pipe)
-  local response_sock = vim.fn.sockconnect("pipe", guest_pipe, { rpc = true })
+  local ok, response_sock = require("flatten.guest").sockconnect(guest_pipe)
+  if not ok then
+    vim.notify("Failed to connect to guest.", vim.log.levels.WARN, {
+      title = "Flatten",
+    })
+    return
+  end
   vim.rpcnotify(
     response_sock,
     "nvim_exec_lua",
