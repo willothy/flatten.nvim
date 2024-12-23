@@ -41,7 +41,7 @@ function M.send_files(files, stdin)
     or config.callbacks.should_block(vim.v.argv)
 
   local server = vim.fn.fnameescape(vim.v.servername)
-  local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1) --[[@as string]])
+  local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1))
   if is_windows() then
     server = sanitize(server)
     cwd = sanitize(cwd)
@@ -74,7 +74,7 @@ end
 
 function M.send_commands()
   local server = vim.fn.fnameescape(vim.v.servername)
-  local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1) --[[@as string]])
+  local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1))
   if is_windows() then
     server = sanitize(server)
     cwd = sanitize(cwd)
