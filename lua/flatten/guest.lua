@@ -28,6 +28,7 @@ function M.maybe_block(block)
   waiting = true
   vim.wait(math.huge, function()
     return waiting == false
+      or vim.api.nvim_get_chan_info(host) == vim.empty_dict()
   end, 1000)
   vim.cmd.qa({ bang = true })
 end
