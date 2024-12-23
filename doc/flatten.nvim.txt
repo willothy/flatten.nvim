@@ -1,4 +1,4 @@
-*flatten.nvim.txt*          For NVIM v0.8.0         Last change: 2024 April 03
+*flatten.nvim.txt*        For NVIM v0.10.0       Last change: 2024 December 23
 
 ==============================================================================
 Table of Contents                             *flatten.nvim-table-of-contents*
@@ -10,8 +10,9 @@ Table of Contents                             *flatten.nvim-table-of-contents*
   - Advanced configuration examples|flatten.nvim-advanced-configuration-examples|
   - About                                                 |flatten.nvim-about|
 
-  **NOTE** There will soon be breaking changes on main with the release of 1.0.0.
-  See #87 <https://github.com/willothy/flatten.nvim/issues/87> for more info.
+  **NOTE** Flatten is undergoing some breaking changes on the road to the release
+  of a stable 1.0.0. See #87 <https://github.com/willothy/flatten.nvim/issues/87>
+  for more info.
 
 FEATURES                                               *flatten.nvim-features*
 
@@ -28,6 +29,8 @@ FEATURES                                               *flatten.nvim-features*
 
 INSTALLATION                                       *flatten.nvim-installation*
 
+
+  Requires nvim >=0.10.
 
 FOLKE/LAZY.NVIM ~
 
