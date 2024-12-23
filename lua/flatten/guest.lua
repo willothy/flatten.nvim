@@ -2,6 +2,7 @@ local M = {}
 
 local config = require("flatten").config
 
+local waiting = false
 local host
 
 local function is_windows()
@@ -16,14 +17,19 @@ function M.exec_on_host(call, opts)
   return vim.rpcrequest(host, "nvim_exec_lua", call, opts or {})
 end
 
+function M.unblock()
+  waiting = false
+end
+
 function M.maybe_block(block)
   if not block then
     vim.cmd.qa({ bang = true })
   end
-  vim.fn.chanclose(host)
-  while true do
-    vim.cmd.sleep(1)
-  end
+  waiting = true
+  vim.wait(math.huge, function()
+    return waiting == false
+  end, 1000)
+  vim.cmd.qa({ bang = true })
 end
 
 function M.send_files(files, stdin)

@@ -6,11 +6,12 @@ function M.unblock_guest(guest_pipe)
   vim.rpcnotify(
     response_sock,
     "nvim_exec_lua",
-    ---@diagnostic disable-next-line: param-type-mismatch
-    "vim.cmd.qa({ bang = true })",
+    "require('flatten.guest').unblock()",
     {}
   )
-  vim.fn.chanclose(response_sock)
+  if vim.api.nvim_get_chan_info(response_sock).id ~= nil then
+    vim.fn.chanclose(response_sock)
+  end
 end
 
 ---@param addr string
