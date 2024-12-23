@@ -39,6 +39,10 @@ local Flatten = {}
 ---Specify whether to allow a nested session to open when nvim is executed without any args
 ---@alias Flatten.NestIfNoArgs boolean?
 
+---@alias Flatten.WindowId integer
+
+---@alias Flatten.BufferId integer
+
 -- The first argument is a list of BufInfo tables representing the newly opened files.
 -- The third argument is a single BufInfo table, only provided when a buffer is created from stdin.
 --
@@ -46,7 +50,7 @@ local Flatten = {}
 --            The `winnr` return value is not required, `vim.fn.bufwinid(bufnr)` is used if it is not provided.
 --            The `filetype` of this buffer will determine whether block should happen or not.
 --
----@alias Flatten.OpenHandler fun(opts: Flatten.OpenContext):window, buffer
+---@alias Flatten.OpenHandler fun(opts: Flatten.OpenContext):Flatten.WindowId, Flatten.BufferId
 
 ---Determines what window(s) to open files in.
 ---@alias Flatten.OpenConfig "'current'" | "'alternate'" | "'split'" | "'vsplit'" | "'tab'" | "'smart'" | Flatten.OpenHandler
@@ -79,7 +83,7 @@ local Flatten = {}
 ---Passed to callbacks that handle opening files
 ---@class Flatten.BufInfo
 ---@field fname string
----@field bufnr buffer
+---@field bufnr Flatten.BufferId
 
 ---Passed into custom open handlers
 ---@class Flatten.OpenContext
@@ -95,8 +99,8 @@ local Flatten = {}
 
 ---Passed into the post_open callback
 ---@class Flatten.PostOpenContext
----@field bufnr buffer
----@field winnr window
+---@field bufnr Flatten.BufferId
+---@field winnr Flatten.WindowId
 ---@field filetype string
 ---@field is_blocking boolean
 ---@field is_diff boolean
