@@ -14,7 +14,7 @@ jobs:
       - uses: kdheepak/panvimdoc@main
         with:
           vimdoc: flatten.nvim
-          version: "NVIM v0.8.0"
+          version: "NVIM v0.10.0"
           toc: true
           demojify: true
           treesitter: true
