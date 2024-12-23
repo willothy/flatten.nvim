@@ -17,7 +17,7 @@ Config for demo [here](#advanced-configuration-examples) (autodelete gitcommit o
 <!-- panvimdoc-ignore-end -->
 
 > **NOTE**<br>
-> There will soon be breaking changes on main with the release of 1.0.0.<br>
+> Flatten is undergoing some breaking changes on the road to the release of a stable 1.0.0.<br>
 > See [#87](https://github.com/willothy/flatten.nvim/issues/87) for more info.
 
 ## Features
