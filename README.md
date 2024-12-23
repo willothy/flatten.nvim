@@ -34,6 +34,8 @@ Config for demo [here](#advanced-configuration-examples) (autodelete gitcommit o
 
 ## Installation[^1]
 
+> Requires nvim >=0.10.
+
 ### [`folke/lazy.nvim`](https://github.com/folke/lazy.nvim)
 
 ```lua
