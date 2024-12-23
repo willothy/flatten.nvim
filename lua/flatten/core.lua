@@ -111,17 +111,6 @@ function M.smart_open(focus)
   end
 end
 
----Execute vimscript code
----@param cmd string
-function M.exec(cmd)
-  if vim.api.nvim_exec2 then
-    -- nvim_exec2 only exists in nvim 0.9+
-    vim.api.nvim_exec2(cmd, {})
-  else
-    vim.api.nvim_exec(cmd, false)
-  end
-end
-
 ---@param argv string[]
 ---@return string[] pre_cmds, string[] post_cmds
 function M.parse_argv(argv)
@@ -149,11 +138,11 @@ function M.run_commands(opts)
   local pre_cmds, post_cmds = M.parse_argv(argv)
 
   for _, cmd in ipairs(pre_cmds) do
-    M.exec(cmd)
+    vim.api.nvim_exec2(cmd, {})
   end
 
   for _, cmd in ipairs(post_cmds) do
-    M.exec(cmd)
+    vim.api.nvim_exec2(cmd, {})
   end
 
   return false
@@ -196,7 +185,7 @@ function M.edit_files(opts)
   })
 
   for _, cmd in ipairs(pre_cmds) do
-    M.exec(cmd)
+    vim.api.nvim_exec2(cmd, {})
   end
 
   -- Open files
@@ -244,9 +233,9 @@ function M.edit_files(opts)
     }
   end
 
-  ---@type window
+  ---@type Flatten.WindowId
   local winnr
-  ---@type buffer
+  ---@type Flatten.BufferId
   local bufnr
 
   local is_diff = vim.tbl_contains(argv, "-d")
@@ -344,11 +333,7 @@ function M.edit_files(opts)
     local block = config.block_for[ft] or force_block
 
     for _, cmd in ipairs(post_cmds) do
-      if vim.api.nvim_exec2 then
-        vim.api.nvim_exec2(cmd, {})
-      else
-        vim.api.nvim_exec(cmd, false)
-      end
+      vim.api.nvim_exec2(cmd, {})
     end
 
     callbacks.post_open({
@@ -377,7 +362,7 @@ function M.edit_files(opts)
   end
 
   for _, cmd in ipairs(post_cmds) do
-    M.exec(cmd)
+    vim.api.nvim_exec2(cmd, {})
   end
   return false
 end
