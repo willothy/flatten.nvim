@@ -56,9 +56,8 @@ function M.notify_when_done(pipe, bufnr, callback, cx)
   })
 end
 
----@param focus Flatten.BufInfo?
 ---@return integer?
-function M.smart_open(focus)
+function M.smart_open()
   -- set of valid target windows
   local valid_targets = {}
   for _, win in ipairs(vim.api.nvim_list_wins()) do
@@ -97,18 +96,7 @@ function M.smart_open(focus)
     end
   end
 
-  -- allows using this function as a utility to get a window to open something in
-  if not focus then
-    return win
-  end
-
-  if win then
-    vim.api.nvim_win_set_buf(win, focus.bufnr)
-    vim.api.nvim_set_current_win(win)
-  else
-    vim.cmd("split")
-    vim.api.nvim_win_set_buf(0, focus.bufnr)
-  end
+  return win
 end
 
 ---@param argv string[]
@@ -250,7 +238,15 @@ function M.edit_files(opts)
         guest_cwd = guest_cwd,
       })
     else
-      winnr = M.smart_open() --[[@as integer]] -- this will never return nil
+      local win = M.smart_open()
+      if not win then
+        win = vim.api.nvim_open_win(files[1].bufnr, true, {
+          vertical = false,
+          win = 0,
+        })
+      end
+      winnr = win
+
       vim.api.nvim_set_current_win(winnr)
 
       if stdin_buf then
@@ -269,16 +265,16 @@ function M.edit_files(opts)
       for i, file in ipairs(files) do
         if i == 1 then
           if tab then
-            vim.cmd.tabedit(file.fname)
+            vim.cmd.tabnew()
+            vim.api.nvim_win_set_buf(0, file.bufnr)
           else
             vim.api.nvim_set_current_buf(file.bufnr)
           end
         else
-          if vert then
-            vim.cmd.vsplit(file.fname)
-          else
-            vim.cmd.split(file.fname)
-          end
+          winnr = vim.api.nvim_open_win(file.bufnr, true, {
+            win = 0,
+            vertical = vert,
+          })
         end
         vim.cmd.diffthis()
       end
@@ -295,7 +291,6 @@ function M.edit_files(opts)
       data = data,
     })
     if winnr == nil and bufnr ~= nil then
-      ---@diagnostic disable-next-line: cast-local-type
       winnr = vim.fn.bufwinid(bufnr)
     end
   elseif type(open) == "string" then
@@ -305,19 +300,33 @@ function M.edit_files(opts)
       focus = stdin_buf
     end
     if open == "smart" then
-      M.smart_open(focus)
+      local win = M.smart_open()
+      if not win then
+        win = vim.api.nvim_open_win(focus.bufnr, true, {
+          vertical = false,
+          win = 0,
+        })
+      end
+      winnr = win
     elseif open == "alternate" then
-      winnr = vim.fn.win_getid(vim.fn.winnr("#")) --[[@as integer]]
-      vim.api.nvim_set_current_win(winnr --[[@as integer]])
+      winnr = vim.fn.win_getid(vim.fn.winnr("#"))
+      vim.api.nvim_win_set_buf(winnr, focus.bufnr)
+      vim.api.nvim_set_current_win(winnr)
     elseif open == "split" then
-      vim.cmd.split()
+      winnr = vim.api.nvim_open_win(focus.bufnr, true, {
+        vertical = false,
+        win = 0,
+      })
     elseif open == "vsplit" then
-      vim.cmd.vsplit()
+      winnr = vim.api.nvim_open_win(focus.bufnr, true, {
+        vertical = true,
+        win = 0,
+      })
     elseif open == "tab" then
       vim.cmd.tabnew()
+      vim.api.nvim_set_current_buf(focus.bufnr)
+      winnr = vim.api.nvim_get_current_win()
     end
-    vim.api.nvim_set_current_buf(focus.bufnr)
-    winnr = vim.api.nvim_get_current_win()
     bufnr = focus.bufnr
   else
     vim.api.nvim_err_writeln(
@@ -337,8 +346,8 @@ function M.edit_files(opts)
     end
 
     callbacks.post_open({
-      bufnr = bufnr --[[@as integer]],
-      winnr = winnr --[[@as integer]],
+      bufnr = bufnr,
+      winnr = winnr,
       filetype = ft,
       is_blocking = block,
       is_diff = is_diff,
@@ -348,15 +357,10 @@ function M.edit_files(opts)
     if block then
       M.augroup =
         vim.api.nvim_create_augroup("flatten_notify", { clear = true })
-      M.notify_when_done(
-        response_pipe,
-        bufnr --[[@as integer]],
-        callbacks.block_end,
-        {
-          filetype = ft,
-          data = data,
-        }
-      )
+      M.notify_when_done(response_pipe, bufnr, callbacks.block_end, {
+        filetype = ft,
+        data = data,
+      })
     end
     return block
   end
