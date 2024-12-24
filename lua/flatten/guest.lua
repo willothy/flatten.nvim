@@ -142,14 +142,19 @@ function M.init(host_pipe)
         if not vim.api.nvim_buf_is_valid(buffer) then
           return
         end
-        ---@diagnostic disable-next-line: deprecated
-        local buftype = vim.api.nvim_buf_get_option(buffer, "buftype")
+        local buftype = vim.api.nvim_get_option_value("buftype", {
+          buf = buffer,
+        })
         if buftype ~= "" and buftype ~= "acwrite" then
           return
         end
         local name = vim.api.nvim_buf_get_name(buffer)
-        ---@diagnostic disable-next-line: deprecated
-        if name ~= "" and vim.api.nvim_buf_get_option(buffer, "buflisted") then
+        if
+          name ~= ""
+          and vim.api.nvim_get_option_value("buflisted", {
+            buf = buffer,
+          })
+        then
           return name
         end
       end)
