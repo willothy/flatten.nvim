@@ -26,11 +26,20 @@ function M.maybe_block(block)
     vim.cmd.qa({ bang = true })
   end
   waiting = true
-  vim.wait(math.huge, function()
-    return waiting == false
-      or vim.api.nvim_get_chan_info(host) == vim.empty_dict()
-  end)
-  vim.cmd.qa({ bang = true })
+  if
+    vim.wait(math.huge, function()
+      return waiting == false
+        or vim.api.nvim_get_chan_info(host) == vim.empty_dict()
+    end, nil, true)
+  then
+    vim.cmd.qa({ bang = true })
+  else
+    vim.notify(
+      "Waiting interrupted by user",
+      vim.log.levels.WARN,
+      { title = "flatten.nvim" }
+    )
+  end
 end
 
 function M.send_files(files, stdin)

@@ -4,9 +4,13 @@ local M = {}
 function M.unblock_guest(guest_pipe)
   local ok, response_sock = require("flatten.guest").sockconnect(guest_pipe)
   if not ok then
-    vim.notify("Failed to connect to guest.", vim.log.levels.WARN, {
-      title = "Flatten",
-    })
+    vim.notify(
+      string.format("Failed to connect to rpc host on '%s'.", guest_pipe),
+      vim.log.levels.WARN,
+      {
+        title = "flatten.nvim",
+      }
+    )
     return
   end
   vim.rpcnotify(
@@ -120,6 +124,8 @@ function M.parse_argv(argv)
   return pre_cmds, post_cmds
 end
 
+---@param opts { argv: string[], response_pipe: string, guest_cwd: string }
+---@return boolean
 function M.run_commands(opts)
   local argv = opts.argv
 
@@ -328,9 +334,15 @@ function M.edit_files(opts)
     end
     bufnr = focus.bufnr
   else
-    vim.api.nvim_err_writeln(
-      "Flatten: 'config.open.focus' expects a function or string, got "
-        .. type(open)
+    vim.notify(
+      string.format(
+        "'config.open.focus' expects a function or string, got %s",
+        type(open)
+      ),
+      vim.log.levels.ERROR,
+      {
+        title = "flatten.nvim",
+      }
     )
     return false
   end
