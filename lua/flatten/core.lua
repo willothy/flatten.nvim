@@ -336,7 +336,7 @@ function M.edit_files(opts)
   if bufnr then
     local ft = vim.bo[bufnr].filetype
 
-    local block = config.block_for[ft] or force_block
+    local block = config.block_for[ft] ~= nil or force_block
 
     for _, cmd in ipairs(post_cmds) do
       vim.api.nvim_exec2(cmd, {})
