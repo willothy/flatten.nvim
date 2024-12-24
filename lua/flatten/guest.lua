@@ -13,10 +13,6 @@ local function sanitize(path)
   return path:gsub("\\", "/")
 end
 
-function M.exec_on_host(call, opts)
-  return vim.rpcrequest(host, "nvim_exec_lua", call, opts or {})
-end
-
 function M.unblock()
   waiting = false
 end
@@ -70,15 +66,14 @@ function M.send_files(files, stdin)
     args.data = config.callbacks.guest_data()
   end
 
-  local call = string.format(
-    [[return require('flatten.core').edit_files(%s)]],
-    vim.inspect(args)
-  )
-
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     vim.api.nvim_buf_delete(buf, { force = true })
   end
-  local block = M.exec_on_host(call) or force_block
+
+  local block = require("flatten.rpc").exec_on_host(host, function(opts)
+    require("flatten.core").edit_files(opts)
+  end, { args }, true) or force_block
+
   M.maybe_block(block)
 end
 
@@ -90,22 +85,15 @@ function M.send_commands()
     cwd = sanitize(cwd)
   end
 
-  local args = {
-    response_pipe = server,
-    guest_cwd = cwd,
-    argv = vim.v.argv,
-  }
-
-  local call = string.format(
-    [[return require('flatten.core').run_commands(%s)]],
-    vim.inspect(args)
-  )
-
-  M.exec_on_host(call)
-end
-
-function M.sockconnect(host_pipe)
-  return pcall(vim.fn.sockconnect, "pipe", host_pipe, { rpc = true })
+  require("flatten.rpc").exec_on_host(host, function(args)
+    require("flatten.core").run_commands(args)
+  end, {
+    {
+      response_pipe = server,
+      guest_cwd = cwd,
+      argv = vim.v.argv,
+    },
+  }, true)
 end
 
 function M.init(host_pipe)
@@ -113,12 +101,11 @@ function M.init(host_pipe)
   if type(host_pipe) == "number" then
     host = host_pipe
   else
-    local ok
-    ok, host = M.sockconnect(host_pipe)
-    -- Return on connection error
+    local ok, chan = require("flatten.rpc").connect(host_pipe)
     if not ok then
       return
     end
+    host = chan
   end
 
   if config.callbacks.should_nest and config.callbacks.should_nest(host) then
@@ -174,12 +161,15 @@ function M.init(host_pipe)
         local should_nest, should_block = config.nest_if_no_args, false
 
         if config.callbacks.no_files then
-          local result = M.exec_on_host(
-            ("return require'flatten'.config.callbacks.no_files(%s)"):format(
-              vim.inspect({
-                argv = vim.v.argv,
+          local result = require("flatten.rpc").exec_on_host(
+            host,
+            function(argv)
+              return require("flatten").config.callbacks.no_files({
+                argv = argv,
               })
-            )
+            end,
+            { vim.v.argv },
+            true
           )
           if type(result) == "boolean" then
             should_nest = result

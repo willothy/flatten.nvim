@@ -2,7 +2,7 @@ local M = {}
 
 ---@param guest_pipe string
 function M.unblock_guest(guest_pipe)
-  local ok, response_sock = require("flatten.guest").sockconnect(guest_pipe)
+  local ok, response_sock = require("flatten.rpc").connect(guest_pipe)
   if not ok then
     vim.notify(
       string.format("Failed to connect to rpc host on '%s'.", guest_pipe),
@@ -21,25 +21,6 @@ function M.unblock_guest(guest_pipe)
   )
   if vim.api.nvim_get_chan_info(response_sock).id ~= nil then
     vim.fn.chanclose(response_sock)
-  end
-end
-
----@param addr string
----@param startserver boolean
-function M.try_address(addr, startserver)
-  if not addr:find("/") then
-    addr = ("%s/%s"):format(vim.fn.stdpath("run"), addr)
-  end
-  if vim.loop.fs_stat(addr) then
-    local ok, sock = require("flatten.guest").sockconnect(addr)
-    if ok then
-      return sock
-    end
-  elseif startserver then
-    local ok = pcall(vim.fn.serverstart, addr)
-    if ok then
-      return addr
-    end
   end
 end
 
