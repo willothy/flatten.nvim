@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.0.0](https://github.com/willothy/flatten.nvim/compare/v0.5.1...v1.0.0) (2024-12-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* drop support for nvim <= 0.10
+* fully typed config and API, use tables for callback ctx
+
+### Features
+
+* allow passing data from guest to host ([d3e3529](https://github.com/willothy/flatten.nvim/commit/d3e3529c23740a5411da3614e1ca3f35eb968fc9))
+* support command passthrough without files ([87fc4e0](https://github.com/willothy/flatten.nvim/commit/87fc4e088ba21b73b25a151be9c2319cac5e6890))
+
+
+### Bug Fixes
+
+* opening files in current window did not switch buffers ([99582fc](https://github.com/willothy/flatten.nvim/commit/99582fc587b1860a9373587cb5bab02474b3a6ab))
+* remove the `fast_events` param of `vim.wait` ([8bded0b](https://github.com/willothy/flatten.nvim/commit/8bded0b08492bf4e902452daf28c168d205747f1))
+* remove uses of buffer and window type aliases ([cc3d8f7](https://github.com/willothy/flatten.nvim/commit/cc3d8f79b27e6619136147b35935111be5a83335))
+* set buffer when using the `smart` open strategy ([45cd774](https://github.com/willothy/flatten.nvim/commit/45cd7745c024d52ff0711222c20ee1607b228ac0))
+* stop waiting if/when rpc channel is closed ([4607ac0](https://github.com/willothy/flatten.nvim/commit/4607ac09bed5c783877989977e856534a481e09f))
+* use `0xffffffffffffffff` instead of `math.huge` ([9203fc6](https://github.com/willothy/flatten.nvim/commit/9203fc65134866fc31318b74dc92a12a97028f34))
+* use default interval for `vim.wait` ([4258a0a](https://github.com/willothy/flatten.nvim/commit/4258a0a21df130c9c148602763bb8800e452d180))
+
+
+### Documentation
+
+* update breaking change notice in readme ([d5d7cef](https://github.com/willothy/flatten.nvim/commit/d5d7cef314218a39d3e444dd5b689d7413fab5a7))
+
+
+### Code Refactoring
+
+* drop support for nvim &lt;= 0.10 ([cc3d8f7](https://github.com/willothy/flatten.nvim/commit/cc3d8f79b27e6619136147b35935111be5a83335))
+* fully typed config and API, use tables for callback ctx ([ffb2979](https://github.com/willothy/flatten.nvim/commit/ffb29792da8800b01c299e56fb00d8c96d5198a6))
+
 ## [0.5.1](https://github.com/willothy/flatten.nvim/compare/v0.5.0...v0.5.1) (2024-01-26)
 
 
