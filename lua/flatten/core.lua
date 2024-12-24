@@ -319,8 +319,10 @@ function M.edit_files(opts)
         vertical = true,
         win = 0,
       })
-    elseif open == "tab" then
-      vim.cmd.tabnew()
+    else -- open in current window or new tab
+      if open == "tab" then
+        vim.cmd.tabnew()
+      end
       vim.api.nvim_set_current_buf(focus.bufnr)
       winnr = vim.api.nvim_get_current_win()
     end
