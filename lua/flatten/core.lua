@@ -192,15 +192,9 @@ function M.edit_files(opts)
         bufnr = vim.fn.bufadd(fpath),
       }
 
-      -- set buf options
-      if vim.api.nvim_set_option_value then
-        vim.api.nvim_set_option_value("buflisted", true, {
-          buf = file.bufnr,
-        })
-      else
-        ---@diagnostic disable-next-line: deprecated
-        vim.api.nvim_buf_set_option(file.bufnr, "buflisted", true)
-      end
+      vim.api.nvim_set_option_value("buflisted", true, {
+        buf = file.bufnr,
+      })
 
       files[i] = file
     end
@@ -301,7 +295,10 @@ function M.edit_files(opts)
     end
     if open == "smart" then
       local win = M.smart_open()
-      if not win then
+      if win then
+        vim.api.nvim_win_set_buf(win, focus.bufnr)
+        vim.api.nvim_set_current_win(win)
+      else
         win = vim.api.nvim_open_win(focus.bufnr, true, {
           vertical = false,
           win = 0,
