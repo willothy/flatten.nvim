@@ -1,4 +1,3 @@
----@diagnostic disable: unused-local, redundant-return
 ---@class Flatten
 ---@field callbacks Flatten.Callbacks
 ---@field config Flatten.Config
@@ -172,15 +171,21 @@ function Callbacks.should_nest(host)
   -- If in a wezterm or kitty split, only open files in the first neovim instance
   -- if their working directories are the same.
   -- This allows you to open a new instance in a different cwd, but open files from the active cwd in your current session.
-  local call = "return vim.fn.getcwd(-1)"
-  local ok, host_cwd = pcall(vim.rpcrequest, host, "nvim_exec_lua", call, {})
+  local ok, host_cwd = pcall(
+    require("flatten.rpc").exec_on_host,
+    host,
+    function()
+      return vim.fn.getcwd(-1)
+    end,
+    {},
+    true
+  )
 
   -- Yield to default behavior if RPC call fails
   if not ok then
     return false
   end
 
-  ---@diagnostic disable-next-line: param-type-mismatch
   return not vim.startswith(vim.fn.getcwd(-1), host_cwd)
 end
 
@@ -228,19 +233,19 @@ end
 ---Executed on init on both host and guest. Used to determine the pipe path
 ---for communication between the host and guest, and to determine whether
 ---an nvim instance is a host or guest in the first place.
----@return string?
+---@return string | integer | nil
 function Callbacks.pipe_path()
   -- If running in a terminal inside Neovim:
   if vim.env.NVIM then
     return vim.env.NVIM
   end
 
-  local core = require("flatten.core")
+  local rpc = require("flatten.rpc")
 
   -- If running in a Kitty terminal,
   -- all tabs/windows/os-windows in the same instance of kitty will open in the first neovim instance
   if Flatten.config.integrations.kitty and vim.env.KITTY_PID then
-    local ret = core.try_address("kitty.nvim-" .. vim.env.KITTY_PID, true)
+    local ret = rpc.try_address("kitty.nvim-" .. vim.env.KITTY_PID, true)
     if ret ~= nil then
       return ret
     end
@@ -250,7 +255,7 @@ function Callbacks.pipe_path()
   -- of wezterm will open in the first neovim instance.
   if Flatten.config.integrations.wezterm and vim.env.WEZTERM_UNIX_SOCKET then
     local pid = vim.env.WEZTERM_UNIX_SOCKET:match("gui%-sock%-(%d+)")
-    local ret = core.try_address("wezterm.nvim-" .. pid, true)
+    local ret = rpc.try_address("wezterm.nvim-" .. pid, true)
     if ret ~= nil then
       return ret
     end
