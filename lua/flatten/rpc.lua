@@ -7,7 +7,7 @@ function M.try_address(addr, startserver)
     addr = ("%s/%s"):format(vim.fn.stdpath("run"), addr)
   end
   if vim.loop.fs_stat(addr) then
-    local ok, sock = require("flatten.guest").sockconnect(addr)
+    local ok, sock = M.connect(addr)
     if ok then
       return sock
     end
