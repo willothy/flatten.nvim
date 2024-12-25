@@ -1,4 +1,4 @@
-*flatten.nvim.txt*        For NVIM v0.10.0       Last change: 2024 December 24
+*flatten.nvim.txt*        For NVIM v0.10.0       Last change: 2024 December 25
 
 ==============================================================================
 Table of Contents                             *flatten.nvim-table-of-contents*
@@ -378,7 +378,7 @@ If you use another terminal emulator or multiplexer, you can implement your
           vim.fn.stdpath("run"),
           "kitty.nvim-" .. vim.env.KITTY_PID
         )
-        if not vim.loop.fs_stat(addr) then
+        if not vim.uv.fs_stat(addr) then
           vim.fn.serverstart(addr)
         end
         return addr
