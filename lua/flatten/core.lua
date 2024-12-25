@@ -2,7 +2,8 @@ local M = {}
 
 ---@param guest_pipe string
 function M.unblock_guest(guest_pipe)
-  local ok, response_sock = require("flatten.rpc").connect(guest_pipe)
+  local rpc = require("flatten.rpc")
+  local ok, response_sock = rpc.connect(guest_pipe)
   if not ok then
     vim.notify(
       string.format("Failed to connect to rpc host on '%s'.", guest_pipe),
@@ -13,12 +14,10 @@ function M.unblock_guest(guest_pipe)
     )
     return
   end
-  vim.rpcnotify(
-    response_sock,
-    "nvim_exec_lua",
-    "require('flatten.guest').unblock()",
-    {}
-  )
+
+  rpc.exec_on_host(response_sock, function()
+    require("flatten.guest").unblock()
+  end, {}, false)
   if vim.api.nvim_get_chan_info(response_sock).id ~= nil then
     vim.fn.chanclose(response_sock)
   end

@@ -22,14 +22,13 @@ function M.maybe_block(block)
     vim.cmd.qa({ bang = true })
   end
   waiting = true
-  if
-    vim.wait(0xFFFFFFFFFFFFFFFF, function()
-      return waiting == false
-        or vim.api.nvim_get_chan_info(host) == vim.empty_dict()
-    end)
-  then
+  local res, ctx = vim.wait(0xFFFFFFFFFFFFFFFF, function()
+    return waiting == false
+      or vim.api.nvim_get_chan_info(host) == vim.empty_dict()
+  end, 200, false)
+  if res then
     vim.cmd.qa({ bang = true })
-  else
+  elseif ctx == -2 then
     vim.notify(
       "Waiting interrupted by user",
       vim.log.levels.WARN,
@@ -71,7 +70,7 @@ function M.send_files(files, stdin)
   end
 
   local block = require("flatten.rpc").exec_on_host(host, function(opts)
-    require("flatten.core").edit_files(opts)
+    return require("flatten.core").edit_files(opts)
   end, { args }, true) or force_block
 
   M.maybe_block(block)
@@ -86,7 +85,7 @@ function M.send_commands()
   end
 
   require("flatten.rpc").exec_on_host(host, function(args)
-    require("flatten.core").run_commands(args)
+    return require("flatten.core").run_commands(args)
   end, {
     {
       response_pipe = server,
