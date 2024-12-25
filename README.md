@@ -380,7 +380,7 @@ local pipe_path = function()
       vim.fn.stdpath("run"),
       "kitty.nvim-" .. vim.env.KITTY_PID
     )
-    if not vim.loop.fs_stat(addr) then
+    if not vim.uv.fs_stat(addr) then
       vim.fn.serverstart(addr)
     end
     return addr

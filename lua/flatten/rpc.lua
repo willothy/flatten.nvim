@@ -6,7 +6,7 @@ function M.try_address(addr, startserver)
   if not addr:find("/") then
     addr = ("%s/%s"):format(vim.fn.stdpath("run"), addr)
   end
-  if vim.loop.fs_stat(addr) then
+  if vim.uv.fs_stat(addr) then
     local ok, sock = M.connect(addr)
     if ok then
       return sock
