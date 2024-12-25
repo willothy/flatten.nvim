@@ -2,6 +2,7 @@ local M = {}
 
 ---@param addr string
 ---@param startserver boolean
+---@return string | integer | nil
 function M.try_address(addr, startserver)
   if not addr:find("/") then
     addr = ("%s/%s"):format(vim.fn.stdpath("run"), addr)
