@@ -22,7 +22,7 @@ function M.maybe_block(block)
     vim.cmd.qa({ bang = true })
   end
   waiting = true
-  local res, ctx = vim.wait(0xFFFFFFFFFFFFFFFF, function()
+  local res, ctx = vim.wait(0X7FFFFFFF, function()
     return waiting == false
       or vim.api.nvim_get_chan_info(host) == vim.empty_dict()
   end, 200, false)
