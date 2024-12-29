@@ -169,9 +169,11 @@ function M.edit_files(opts)
     for i, fname in ipairs(files) do
       local is_absolute
       if vim.fn.has("win32") == 1 then
-        is_absolute = string.find(fname, "^%a:") ~= nil
+        is_absolute = string.find(string.gsub(fname, "^%s+://", ""), "^%a:")
+          ~= nil
       else
-        is_absolute = string.find(fname, "^/") ~= nil
+        is_absolute = string.find(string.gsub(fname, "^%s+://", ""), "^/")
+          ~= nil
       end
 
       local fpath = is_absolute and fname or (guest_cwd .. "/" .. fname)
