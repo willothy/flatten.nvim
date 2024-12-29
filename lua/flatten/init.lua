@@ -297,7 +297,10 @@ Flatten.setup = function(opts)
   local pipe_path = Flatten.config.callbacks.pipe_path()
 
   if
-    pipe_path == nil or vim.tbl_contains(vim.fn.serverlist(), pipe_path, {})
+    pipe_path == nil
+    or vim.iter(vim.fn.serverlist()):find(function(path)
+      return path == pipe_path
+    end)
   then
     is_guest = false
     return

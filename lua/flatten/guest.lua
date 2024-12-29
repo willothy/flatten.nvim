@@ -127,36 +127,23 @@ function M.init(host_pipe)
     pattern = "*",
     once = true,
     callback = function()
-      local function filter_map(tbl, f)
-        local result = {}
-        for _, v in ipairs(tbl) do
-          local r = f(v)
-          if r ~= nil then
-            table.insert(result, r)
+      files = vim
+        .iter(vim.api.nvim_list_bufs())
+        :filter(function(buf)
+          local buftype = vim.bo[buf].buftype
+          if buftype ~= "" then
+            return false
           end
-        end
-        return result
-      end
-      files = filter_map(vim.api.nvim_list_bufs(), function(buffer)
-        if not vim.api.nvim_buf_is_valid(buffer) then
-          return
-        end
-        local buftype = vim.api.nvim_get_option_value("buftype", {
-          buf = buffer,
-        })
-        if buftype ~= "" and buftype ~= "acwrite" then
-          return
-        end
-        local name = vim.api.nvim_buf_get_name(buffer)
-        if
-          name ~= ""
-          and vim.api.nvim_get_option_value("buflisted", {
-            buf = buffer,
-          })
-        then
-          return name
-        end
-      end)
+
+          return true
+        end)
+        :map(function(buf)
+          return vim.api.nvim_buf_get_name(buf)
+        end)
+        :filter(function(name)
+          return name ~= ""
+        end)
+        :totable()
       nfiles = #files
 
       -- No arguments, user is probably opening a nested session intentionally
