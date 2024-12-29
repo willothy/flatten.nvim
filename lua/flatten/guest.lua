@@ -37,8 +37,8 @@ function M.maybe_block(block)
   end
 end
 
-function M.send_files(files, stdin)
-  if #files < 1 and #stdin < 1 then
+function M.send_files(files, stdin, quickfix)
+  if #files < 1 and #stdin < 1 and #quickfix < 1 then
     return
   end
 
@@ -57,6 +57,7 @@ function M.send_files(files, stdin)
     response_pipe = server,
     guest_cwd = cwd,
     stdin = stdin,
+    quickfix = quickfix,
     argv = vim.v.argv,
     force_block = force_block,
   }
@@ -146,9 +147,13 @@ function M.init(host_pipe)
         :totable()
       nfiles = #files
 
+      local quickfix = vim.iter(vim.api.nvim_list_bufs()):find(function(buf)
+        return vim.bo[buf].filetype == "quickfix"
+      end)
+
       -- No arguments, user is probably opening a nested session intentionally
       -- Or only piping input from stdin
-      if nfiles < 1 then
+      if nfiles < 1 and not quickfix then
         local should_nest, should_block = config.nest_if_no_args, false
 
         if config.callbacks.no_files then
@@ -176,7 +181,28 @@ function M.init(host_pipe)
         M.maybe_block(should_block)
       end
 
-      M.send_files(files, {})
+      quickfix = vim
+        .iter(vim.fn.getqflist())
+        :map(function(old)
+          return {
+            filename = vim.api.nvim_buf_get_name(old.bufnr),
+            module = old.module,
+            lnum = old.lnum,
+            end_lnum = old.end_lnum,
+            col = old.col,
+            end_col = old.end_col,
+            vcol = old.vcol,
+            nr = old.nr,
+            text = old.text,
+            pattern = old.pattern,
+            type = old.type,
+            valid = old.valid,
+            user_data = old.user_data,
+          }
+        end)
+        :totable()
+
+      M.send_files(files, {}, quickfix)
     end,
   })
 end

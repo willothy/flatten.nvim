@@ -136,6 +136,7 @@ function M.edit_files(opts)
   local focus_first = config.window.focus == "first"
   local open = config.window.open
   local data = opts.data
+  local quickfix = opts.quickfix
 
   local nfiles = #files
   local stdin_lines = #stdin
@@ -148,6 +149,7 @@ function M.edit_files(opts)
     and stdin_lines == 0
     and #pre_cmds == 0
     and #post_cmds == 0
+    and #quickfix == 0
   then
     -- If there are no new bufs and no commands, don't open anything
     -- and tell the guest not to block
@@ -199,6 +201,10 @@ function M.edit_files(opts)
       fname = "",
       bufnr = bufnr,
     }
+  end
+
+  if quickfix then
+    vim.fn.setqflist(quickfix, "r")
   end
 
   ---@type Flatten.WindowId

@@ -21,13 +21,14 @@ local Flatten = {}
 ---@field nest_if_no_args Flatten.NestIfNoArgs?
 
 ---@class Flatten.EditFilesOptions
----@field files table          list of files passed into nested instance
----@field response_pipe string guest default socket
----@field guest_cwd string     guest global cwd
----@field argv table           full list of options passed to the nested instance, see v:argv
----@field stdin table          stdin lines or {}
----@field force_block boolean  enable blocking
----@field data any?            arbitrary data passed to the host
+---@field files table                     list of files passed into nested instance
+---@field response_pipe string            guest default socket
+---@field guest_cwd string                guest global cwd
+---@field argv string[]                   full list of options passed to the nested instance, see v:argv
+---@field stdin string[]                  stdin lines or {}
+---@field quickfix vim.quickfix.entry[]   quickfix list or {}
+---@field force_block boolean             enable blocking
+---@field data any?                       arbitrary data passed to the host
 
 ---Specify blocking by filetype
 ---@alias Flatten.BlockFor table<string, boolean>
