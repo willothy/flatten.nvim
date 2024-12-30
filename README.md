@@ -208,7 +208,7 @@ local config = {
     - `guest_cwd`: `string`
       - The current working directory of the guest instance.
     - `data`: `any`
-      - The data passed to the host from the `guest_data` callback.
+      - The data passed to the host from the `guest_data` hook.
 
   - `Flatten.BufInfo`:
     - `fname`: `string`
@@ -234,7 +234,7 @@ Defaults are in `flatten.hooks`.
 
   - `Flatten.PreOpenContext`:
     - `data`: `any`
-      - The data passed to the host from the `guest_data` callback.
+      - The data passed to the host from the `guest_data` hook.
 
 - `hooks.post_open`: `fun(opts: Flatten.PostOpenContext)`
   - Called after opening files.
@@ -251,7 +251,7 @@ Defaults are in `flatten.hooks`.
     - `is_diff`: `boolean`
       - Whether the files were opened in diff mode.
     - `data`: `any`
-      - The data passed to the host from the `guest_data` callback.
+      - The data passed to the host from the `guest_data` hook.
 
 - `hooks.block_end`: `fun(opts: Flatten.BlockEndContext)`
   - Called when the host closes the file.
@@ -260,7 +260,7 @@ Defaults are in `flatten.hooks`.
     - `filetype`: `string`
       - The filetype of the file that was opened.
     - `data`: `any`
-      - The data passed to the host from the `guest_data` callback.
+      - The data passed to the host from the `guest_data` hook.
 
 - `hooks.no_files`: `fun(opts: Flatten.NoFilesArgs): Flatten.NoFilesBehavior`
   - Called when no files are passed to a guest instance, to determine what to do.
@@ -284,7 +284,7 @@ If you use a toggleable terminal and don't want the new buffer(s) to be opened i
 
 The only reason 'alternate' isn't the default is to avoid breaking people's configs. It may become the default at some point if that's something that people ask for (e.g., open an issue if you want that, or comment on one if it exists).
 
-Note that when opening a file in blocking mode, such as a git commit, the terminal will be inaccessible. You can get the filetype from the bufnr or filetype arguments of the `post_open` callback to only close the terminal for blocking files, and the `block_end` callback to reopen it afterwards.
+Note that when opening a file in blocking mode, such as a git commit, the terminal will be inaccessible. You can get the filetype from the bufnr or filetype arguments of the `post_open` hook to only close the terminal for blocking files, and the `block_end` hook to reopen it afterwards.
 
 Here's my setup for toggleterm, including an autocmd to automatically close a git commit buffer on write:
 
