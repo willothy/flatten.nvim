@@ -1,13 +1,7 @@
 local M = {}
 
-local config = require("flatten").config
-
 local waiting = false
 local host
-
-local function is_windows()
-  return string.sub(package["config"], 1, 1) == "\\"
-end
 
 local function sanitize(path)
   return path:gsub("\\", "/")
@@ -41,13 +35,14 @@ function M.send_files(files, stdin, quickfix)
   if #files < 1 and #stdin < 1 and #quickfix < 1 then
     return
   end
+  local config = require("flatten").config
 
   local force_block = vim.g.flatten_wait ~= nil
     or config.callbacks.should_block(vim.v.argv)
 
   local server = vim.fn.fnameescape(vim.v.servername)
   local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1))
-  if is_windows() then
+  if jit.os == "Windows" then
     server = sanitize(server)
     cwd = sanitize(cwd)
   end
@@ -80,7 +75,7 @@ end
 function M.send_commands()
   local server = vim.fn.fnameescape(vim.v.servername)
   local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1))
-  if is_windows() then
+  if jit.os == "Windows" then
     server = sanitize(server)
     cwd = sanitize(cwd)
   end
@@ -107,6 +102,8 @@ function M.init(host_pipe)
     end
     host = chan
   end
+
+  local config = require("flatten").config
 
   if config.callbacks.should_nest and config.callbacks.should_nest(host) then
     return

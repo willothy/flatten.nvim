@@ -1,5 +1,15 @@
 local M = {}
 
+local function path_is_absolute(path)
+  path = string.gsub(path, "^%s+://", "")
+
+  if jit.os == "Windows" then
+    return string.find(path, "^%a:") ~= nil
+  else
+    return string.find(path, "^/") ~= nil
+  end
+end
+
 ---@param guest_pipe string
 function M.unblock_guest(guest_pipe)
   local rpc = require("flatten.rpc")
@@ -167,16 +177,13 @@ function M.edit_files(opts)
   -- Open files
   if nfiles > 0 then
     for i, fname in ipairs(files) do
-      local is_absolute
-      if vim.fn.has("win32") == 1 then
-        is_absolute = string.find(string.gsub(fname, "^%s+://", ""), "^%a:")
-          ~= nil
+      local fpath
+      if path_is_absolute(fname) then
+        fpath = fname
       else
-        is_absolute = string.find(string.gsub(fname, "^%s+://", ""), "^/")
-          ~= nil
+        fpath = guest_cwd .. "/" .. fname
       end
 
-      local fpath = is_absolute and fname or (guest_cwd .. "/" .. fname)
       local file = {
         fname = fpath,
         bufnr = vim.fn.bufadd(fpath),
