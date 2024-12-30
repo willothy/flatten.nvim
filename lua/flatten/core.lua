@@ -142,7 +142,7 @@ function M.edit_files(opts)
   local force_block = opts.force_block
   local argv = opts.argv
   local config = require("flatten").config
-  local callbacks = config.callbacks
+  local hooks = config.hooks
   local focus_first = config.window.focus == "first"
   local open = config.window.open
   local data = opts.data
@@ -166,7 +166,7 @@ function M.edit_files(opts)
     return false
   end
 
-  callbacks.pre_open({
+  hooks.pre_open({
     data = data,
   })
 
@@ -351,7 +351,7 @@ function M.edit_files(opts)
       vim.api.nvim_exec2(cmd, {})
     end
 
-    callbacks.post_open({
+    hooks.post_open({
       bufnr = bufnr,
       winnr = winnr,
       filetype = ft,
@@ -363,7 +363,7 @@ function M.edit_files(opts)
     if block then
       M.augroup =
         vim.api.nvim_create_augroup("flatten_notify", { clear = true })
-      notify_when_done(response_pipe, bufnr, callbacks.block_end, {
+      notify_when_done(response_pipe, bufnr, hooks.block_end, {
         filetype = ft,
         data = data,
       })

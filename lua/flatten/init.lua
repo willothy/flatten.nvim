@@ -1,11 +1,11 @@
 ---@class Flatten
----@field callbacks Flatten.Callbacks
+---@field hooks Flatten.Hooks
 ---@field config Flatten.Config
 local Flatten = {}
 
 ---Top-level config table
 ---@class Flatten.Config
----@field callbacks Flatten.Callbacks
+---@field hooks Flatten.Hooks
 ---@field window Flatten.WindowConfig
 ---@field integrations Flatten.Integrations
 ---@field block_for Flatten.BlockFor
@@ -13,7 +13,7 @@ local Flatten = {}
 ---@field nest_if_no_args Flatten.NestIfNoArgs
 
 ---@class Flatten.PartialConfig: Flatten.Config
----@field callbacks Flatten.Callbacks
+---@field hooks Flatten.Hooks
 ---@field window Flatten.WindowConfig?
 ---@field integrations Flatten.Integrations?
 ---@field block_for Flatten.BlockFor?
@@ -80,7 +80,7 @@ local Flatten = {}
 ---Flatten nested instances in wezterm tabs / panes
 ---@field wezterm? boolean
 
----Passed to callbacks that handle opening files
+---Passed to hooks that handle opening files
 ---@class Flatten.BufInfo
 ---@field fname string
 ---@field bufnr Flatten.BufferId
@@ -115,8 +115,8 @@ local Flatten = {}
 ---@class Flatten.NoFilesArgs
 ---@field argv string[]
 
----Callbacks to define custom behavior
----@class Flatten.Callbacks
+---Hooks to define custom behavior
+---@class Flatten.Hooks
 ---Called to determine if a nested session should wait for the host to close the file.
 ---@field should_block? fun(argv: string[]):boolean
 ---If this returns true, the nested session will be opened.
@@ -138,14 +138,14 @@ local Flatten = {}
 ---for communication between the host and guest, and to determine whether
 ---an nvim instance is a host or guest in the first place.
 ---@field pipe_path? fun():string?
-local Callbacks = {}
+local Hooks = {}
 
-Flatten.callbacks = Callbacks
+Flatten.hooks = Hooks
 
 ---Called to determine if a nested session should wait for the host to close the file.
 ---@param argv string[]
 ---@return boolean
-function Callbacks.should_block(argv)
+function Hooks.should_block(argv)
   local _ = argv
   return false
 end
@@ -155,7 +155,7 @@ end
 ---config.nest_if_no_args is respected.
 ---@param host integer channel id
 ---@return boolean
-function Callbacks.should_nest(host)
+function Hooks.should_nest(host)
   -- don't nest in a neovim terminal (unless nest_if_no_args is set)
   if vim.env.NVIM ~= nil then
     return false
@@ -193,19 +193,19 @@ end
 
 ---Called before a nested session is opened.
 ---@param opts Flatten.PreOpenContext
-function Callbacks.pre_open(opts)
+function Hooks.pre_open(opts)
   local _ = opts
 end
 
 ---Called after a nested session is opened.
 ---@param opts Flatten.PostOpenContext
-function Callbacks.post_open(opts)
+function Hooks.post_open(opts)
   local _ = opts
 end
 
 ---Called when a nested session is done waiting for the host.
 ---@param opts Flatten.BlockEndContext
-function Callbacks.block_end(opts)
+function Hooks.block_end(opts)
   local _ = opts
 end
 
@@ -213,7 +213,7 @@ end
 ---to nest or not. The default implementation returns config.nest_if_no_args.
 ---@param opts { argv: string[] }
 ---@return Flatten.NoFilesBehavior
-function Callbacks.no_files(opts)
+function Hooks.no_files(opts)
   if not Flatten.config.nest_if_no_args then
     return false
   end
@@ -228,7 +228,7 @@ end
 
 ---Only executed on the guest, used to pass arbitrary data to the host.
 ---@return any
-function Callbacks.guest_data()
+function Hooks.guest_data()
   return nil
 end
 
@@ -236,7 +236,7 @@ end
 ---for communication between the host and guest, and to determine whether
 ---an nvim instance is a host or guest in the first place.
 ---@return string | integer | nil
-function Callbacks.pipe_path()
+function Hooks.pipe_path()
   -- If running in a terminal inside Neovim:
   if vim.env.NVIM then
     return vim.env.NVIM
@@ -266,7 +266,7 @@ end
 
 ---@type Flatten.Config
 Flatten.config = {
-  callbacks = Callbacks,
+  hooks = Hooks,
   block_for = {
     gitcommit = true,
     gitrebase = true,
@@ -295,7 +295,21 @@ end
 function Flatten.setup(opts)
   Flatten.config = vim.tbl_deep_extend("keep", opts or {}, Flatten.config)
 
-  local pipe_path = Flatten.config.callbacks.pipe_path()
+  if vim.tbl_get(Flatten.config, "callbacks") ~= nil then
+    vim.schedule(function()
+      vim.notify_once(
+        "flatten.nvim: `callbacks` is deprecated, use `hooks` instead",
+        vim.log.levels.WARN,
+        {
+          title = "flatten.nvim",
+          filetype = "markdown",
+        }
+      )
+    end)
+    Flatten.config.hooks = vim.tbl_get(Flatten.config, "callbacks")
+  end
+
+  local pipe_path = Flatten.config.hooks.pipe_path()
 
   if
     pipe_path == nil

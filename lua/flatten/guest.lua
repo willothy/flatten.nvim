@@ -34,7 +34,7 @@ local function send_files(files, stdin, quickfix)
   local config = require("flatten").config
 
   local force_block = vim.g.flatten_wait ~= nil
-    or config.callbacks.should_block(vim.v.argv)
+    or config.hooks.should_block(vim.v.argv)
 
   local server = vim.fn.fnameescape(vim.v.servername)
   local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1))
@@ -53,8 +53,8 @@ local function send_files(files, stdin, quickfix)
     force_block = force_block,
   }
 
-  if config.callbacks.guest_data then
-    args.data = config.callbacks.guest_data()
+  if config.hooks.guest_data then
+    args.data = config.hooks.guest_data()
   end
 
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
@@ -105,7 +105,7 @@ function M.init(host_pipe)
 
   local config = require("flatten").config
 
-  if config.callbacks.should_nest and config.callbacks.should_nest(host) then
+  if config.hooks.should_nest and config.hooks.should_nest(host) then
     return
   end
 
@@ -153,11 +153,11 @@ function M.init(host_pipe)
       if nfiles < 1 and not quickfix then
         local should_nest, should_block = config.nest_if_no_args, false
 
-        if config.callbacks.no_files then
+        if config.hooks.no_files then
           local result = require("flatten.rpc").exec_on_host(
             host,
             function(argv)
-              return require("flatten").config.callbacks.no_files({
+              return require("flatten").config.hooks.no_files({
                 argv = argv,
               })
             end,
