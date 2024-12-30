@@ -11,7 +11,7 @@ local function path_is_absolute(path)
 end
 
 ---@param guest_pipe string
-function M.unblock_guest(guest_pipe)
+local function unblock_guest(guest_pipe)
   local rpc = require("flatten.rpc")
   local ok, response_sock = rpc.connect(guest_pipe)
   if not ok then
@@ -37,17 +37,56 @@ end
 ---@param bufnr integer
 ---@param callback fun(opts: Flatten.BlockEndContext)
 ---@param cx Flatten.BlockEndContext
-function M.notify_when_done(pipe, bufnr, callback, cx)
+local function notify_when_done(pipe, bufnr, callback, cx)
   vim.api.nvim_create_autocmd({ "QuitPre", "BufUnload", "BufDelete" }, {
     buffer = bufnr,
     once = true,
     group = M.augroup,
     callback = function()
       vim.api.nvim_del_augroup_by_id(M.augroup)
-      M.unblock_guest(pipe)
+      unblock_guest(pipe)
       callback(cx)
     end,
   })
+end
+
+---@param argv string[]
+---@return string[] pre_cmds, string[] post_cmds
+local function parse_argv(argv)
+  local pre_cmds, post_cmds = {}, {}
+  local is_cmd = false
+  for _, arg in ipairs(argv) do
+    if is_cmd then
+      is_cmd = false
+      -- execute --cmd <cmd> commands
+      table.insert(pre_cmds, arg)
+    elseif arg:sub(1, 1) == "+" then
+      local cmd = string.sub(arg, 2, -1)
+      table.insert(post_cmds, cmd)
+    elseif arg == "--cmd" then
+      -- next arg is the actual command
+      is_cmd = true
+    end
+  end
+  return pre_cmds, post_cmds
+end
+
+---@param opts { argv: string[], response_pipe: string, guest_cwd: string }
+---@return boolean
+function M.run_commands(opts)
+  local argv = opts.argv
+
+  local pre_cmds, post_cmds = parse_argv(argv)
+
+  for _, cmd in ipairs(pre_cmds) do
+    vim.api.nvim_exec2(cmd, {})
+  end
+
+  for _, cmd in ipairs(post_cmds) do
+    vim.api.nvim_exec2(cmd, {})
+  end
+
+  return false
 end
 
 ---@return integer?
@@ -93,45 +132,6 @@ function M.smart_open()
   return win
 end
 
----@param argv string[]
----@return string[] pre_cmds, string[] post_cmds
-function M.parse_argv(argv)
-  local pre_cmds, post_cmds = {}, {}
-  local is_cmd = false
-  for _, arg in ipairs(argv) do
-    if is_cmd then
-      is_cmd = false
-      -- execute --cmd <cmd> commands
-      table.insert(pre_cmds, arg)
-    elseif arg:sub(1, 1) == "+" then
-      local cmd = string.sub(arg, 2, -1)
-      table.insert(post_cmds, cmd)
-    elseif arg == "--cmd" then
-      -- next arg is the actual command
-      is_cmd = true
-    end
-  end
-  return pre_cmds, post_cmds
-end
-
----@param opts { argv: string[], response_pipe: string, guest_cwd: string }
----@return boolean
-function M.run_commands(opts)
-  local argv = opts.argv
-
-  local pre_cmds, post_cmds = M.parse_argv(argv)
-
-  for _, cmd in ipairs(pre_cmds) do
-    vim.api.nvim_exec2(cmd, {})
-  end
-
-  for _, cmd in ipairs(post_cmds) do
-    vim.api.nvim_exec2(cmd, {})
-  end
-
-  return false
-end
-
 ---@param opts Flatten.EditFilesOptions
 ---@return boolean
 function M.edit_files(opts)
@@ -152,7 +152,7 @@ function M.edit_files(opts)
   local stdin_lines = #stdin
 
   --- commands passed through with +<cmd>, to be executed after opening files
-  local pre_cmds, post_cmds = M.parse_argv(argv)
+  local pre_cmds, post_cmds = parse_argv(argv)
 
   if
     nfiles == 0
@@ -363,7 +363,7 @@ function M.edit_files(opts)
     if block then
       M.augroup =
         vim.api.nvim_create_augroup("flatten_notify", { clear = true })
-      M.notify_when_done(response_pipe, bufnr, callbacks.block_end, {
+      notify_when_done(response_pipe, bufnr, callbacks.block_end, {
         filetype = ft,
         data = data,
       })

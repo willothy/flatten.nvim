@@ -7,11 +7,7 @@ local function sanitize(path)
   return path:gsub("\\", "/")
 end
 
-function M.unblock()
-  waiting = false
-end
-
-function M.maybe_block(block)
+local function maybe_block(block)
   if not block then
     vim.cmd.qa({ bang = true })
   end
@@ -31,7 +27,7 @@ function M.maybe_block(block)
   end
 end
 
-function M.send_files(files, stdin, quickfix)
+local function send_files(files, stdin, quickfix)
   if #files < 1 and #stdin < 1 and #quickfix < 1 then
     return
   end
@@ -69,10 +65,10 @@ function M.send_files(files, stdin, quickfix)
     return require("flatten.core").edit_files(opts)
   end, { args }, true) or force_block
 
-  M.maybe_block(block)
+  maybe_block(block)
 end
 
-function M.send_commands()
+local function send_commands()
   local server = vim.fn.fnameescape(vim.v.servername)
   local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1))
   if jit.os == "Windows" then
@@ -89,6 +85,10 @@ function M.send_commands()
       argv = vim.v.argv,
     },
   }, true)
+end
+
+function M.unblock()
+  waiting = false
 end
 
 function M.init(host_pipe)
@@ -117,7 +117,7 @@ function M.init(host_pipe)
     pattern = "*",
     callback = function()
       local readlines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
-      M.send_files(files, readlines)
+      send_files(files, readlines)
     end,
   })
 
@@ -174,8 +174,8 @@ function M.init(host_pipe)
         if should_nest == true then
           return
         end
-        M.send_commands()
-        M.maybe_block(should_block)
+        send_commands()
+        maybe_block(should_block)
       end
 
       quickfix = vim
@@ -199,7 +199,7 @@ function M.init(host_pipe)
         end)
         :totable()
 
-      M.send_files(files, {}, quickfix)
+      send_files(files, {}, quickfix)
     end,
   })
 end

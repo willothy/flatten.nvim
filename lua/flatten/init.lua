@@ -292,7 +292,7 @@ function Flatten.is_guest()
 end
 
 ---@param opts Flatten.PartialConfig?
-Flatten.setup = function(opts)
+function Flatten.setup(opts)
   Flatten.config = vim.tbl_deep_extend("keep", opts or {}, Flatten.config)
 
   local pipe_path = Flatten.config.callbacks.pipe_path()
