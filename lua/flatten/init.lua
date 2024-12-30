@@ -93,11 +93,11 @@ local Flatten = {}
 ---@field guest_cwd string
 ---@field data any
 
----Passed into the pre_open callback
+---Passed into the pre_open hook
 ---@class Flatten.PreOpenContext
 ---@field data any
 
----Passed into the post_open callback
+---Passed into the post_open hook
 ---@class Flatten.PostOpenContext
 ---@field bufnr Flatten.BufferId
 ---@field winnr Flatten.WindowId
@@ -106,12 +106,12 @@ local Flatten = {}
 ---@field is_diff boolean
 ---@field data any
 
----Passed into the block_end callback
+---Passed into the block_end hook
 ---@class Flatten.BlockEndContext
 ---@field filetype string
 ---@field data any
 
----Passed into the no_files callback from the guest (cb is run on the host)
+---Passed into the no_files hook from the guest (cb is run on the host)
 ---@class Flatten.NoFilesArgs
 ---@field argv string[]
 
