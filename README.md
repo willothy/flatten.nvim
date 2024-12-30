@@ -25,7 +25,7 @@ Config for demo [here](#advanced-configuration-examples) (autodelete gitcommit o
 - [x] Open files from terminal buffers without creating a nested session
 - [x] Allow blocking for git commits
 - [x] Configuration
-  - [x] Callbacks/hooks for user-specific workflows
+  - [x] Hooks for user-specific workflows
   - [x] Open in vsplit, split, tab, current window, or alternate window
 - [x] Pipe from terminal into a new Neovim buffer<!-- panvimdoc-ignore-start --> ([demo](https://user-images.githubusercontent.com/38540736/225779817-ed7efea8-9108-4f28-983f-1a889d32826f.mp4)) <!-- panvimdoc-ignore-end -->
 - [x] Setting to force blocking from the commandline, regardless of filetype
@@ -123,15 +123,15 @@ Flatten comes with the following defaults:
 local flatten = require("flatten")
 
 local config = {
-  callbacks = {
-    should_block = flatten.callbacks.should_block,
-    should_nest = flatten.callbacks.should_nest,
-    pre_open = flatten.callbacks.pre_open,
-    post_open = flatten.callbacks.post_open,
-    block_end = flatten.callbacks.block_end,
-    no_files = flatten.callbacks.no_files,
-    guest_data = flatten.callbacks.guest_data,
-    pipe_path = flatten.callbacks.pipe_path,
+  hooks = {
+    should_block = flatten.hooks.should_block,
+    should_nest = flatten.hooks.should_nest,
+    pre_open = flatten.hooks.pre_open,
+    post_open = flatten.hooks.post_open,
+    block_end = flatten.hooks.block_end,
+    no_files = flatten.hooks.no_files,
+    guest_data = flatten.hooks.guest_data,
+    pipe_path = flatten.hooks.pipe_path,
   },
   block_for = {
     gitcommit = true,
@@ -217,26 +217,26 @@ local config = {
 - `window.focus`: `"first"` | `"last"`
   - The default is `"first"`.
 
-### Callbacks
+### Hooks
 
-Defaults are in `flatten.callbacks`.
+Defaults are in `flatten.hooks`.
 
-- `callbacks.should_block`: `fun(argv: string[]): boolean`
+- `hooks.should_block`: `fun(argv: string[]): boolean`
   - Should return `true` if the guest should wait for the host to close the file.
 
-- `callbacks.should_nest`: `fun(host: channel): boolean`
+- `hooks.should_nest`: `fun(host: channel): boolean`
   - Should return `true` if the guest should *not* be flattened into the same Neovim instance as the host.
     This is useful for customizing when files should be sent to a host instance and when they should be opened
     in a new one.
 
-- `callbacks.pre_open`: `fun(opts: Flatten.PreOpenContext)`
+- `hooks.pre_open`: `fun(opts: Flatten.PreOpenContext)`
   - Called before opening files.
 
   - `Flatten.PreOpenContext`:
     - `data`: `any`
       - The data passed to the host from the `guest_data` callback.
 
-- `callbacks.post_open`: `fun(opts: Flatten.PostOpenContext)`
+- `hooks.post_open`: `fun(opts: Flatten.PostOpenContext)`
   - Called after opening files.
 
   - `Flatten.PostOpenContext`:
@@ -253,7 +253,7 @@ Defaults are in `flatten.callbacks`.
     - `data`: `any`
       - The data passed to the host from the `guest_data` callback.
 
-- `callbacks.block_end`: `fun(opts: Flatten.BlockEndContext)`
+- `hooks.block_end`: `fun(opts: Flatten.BlockEndContext)`
   - Called when the host closes the file.
 
   - `Flatten.BlockEndContext`:
@@ -262,7 +262,7 @@ Defaults are in `flatten.callbacks`.
     - `data`: `any`
       - The data passed to the host from the `guest_data` callback.
 
-- `callbacks.no_files`: `fun(opts: Flatten.NoFilesArgs): Flatten.NoFilesBehavior`
+- `hooks.no_files`: `fun(opts: Flatten.NoFilesArgs): Flatten.NoFilesBehavior`
   - Called when no files are passed to a guest instance, to determine what to do.
 
   - `Flatten.NoFilesArgs`:
@@ -270,10 +270,10 @@ Defaults are in `flatten.callbacks`.
 
   - `Flatten.NoFilesBehavior`: `boolean` | `{ nest: boolean, block: boolean }`
 
-- `callbacks.guest_data`: `fun(): any`
+- `hooks.guest_data`: `fun(): any`
   - Called when the guest sends data to the host, to allow custom data to be passed to the host.
 
-- `callbacks.pipe_path`: `fun(): string`
+- `hooks.pipe_path`: `fun(): string`
   - Called to determine whether an instance is a host or is a guest and should connect to a host.
 
 ## Advanced configuration examples
@@ -299,7 +299,7 @@ local flatten = {
       window = {
         open = "alternate",
       },
-      callbacks = {
+      hooks = {
         should_block = function(argv)
           -- Note that argv contains all the parts of the CLI command, including
           -- Neovim's path, commands, options and files.
