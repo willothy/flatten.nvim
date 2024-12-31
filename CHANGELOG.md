@@ -1,5 +1,49 @@
 # Changelog
 
+## [1.0.0](https://github.com/willothy/flatten.nvim/compare/v0.5.1...v1.0.0) (2024-12-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* **config:** rename `callbacks` to `hooks`
+* drop support for nvim <= 0.10
+* fully typed config and API, use tables for callback ctx
+
+### Features
+
+* allow passing data from guest to host ([d3e3529](https://github.com/willothy/flatten.nvim/commit/d3e3529c23740a5411da3614e1ca3f35eb968fc9))
+* allow remote use of quickfix mode (`nvim -q`) ([de9f7b0](https://github.com/willothy/flatten.nvim/commit/de9f7b06d324ca5b54aa72b31bcbb483d3ae8048)), closes [#94](https://github.com/willothy/flatten.nvim/issues/94)
+* **config:** rename `callbacks` to `hooks` ([738e16b](https://github.com/willothy/flatten.nvim/commit/738e16bc003f8cb531354fc169e2102cd255eaba))
+* support command passthrough without files ([87fc4e0](https://github.com/willothy/flatten.nvim/commit/87fc4e088ba21b73b25a151be9c2319cac5e6890))
+
+
+### Bug Fixes
+
+* `timeout must be &gt;= 0` for vim.wait ([814f3d2](https://github.com/willothy/flatten.nvim/commit/814f3d2661a60034719f129d5ec064c1d686e76d))
+* opening files in current window did not switch buffers ([99582fc](https://github.com/willothy/flatten.nvim/commit/99582fc587b1860a9373587cb5bab02474b3a6ab))
+* **os/compat:** check `jit.os == "Windows"` instead of `has("win32")` ([22fc170](https://github.com/willothy/flatten.nvim/commit/22fc1708bbc16f508ddfd4220c55b9eaca025288))
+* remove the `fast_events` param of `vim.wait` ([8bded0b](https://github.com/willothy/flatten.nvim/commit/8bded0b08492bf4e902452daf28c168d205747f1))
+* remove uses of buffer and window type aliases ([cc3d8f7](https://github.com/willothy/flatten.nvim/commit/cc3d8f79b27e6619136147b35935111be5a83335))
+* return value from rpc call ([ab2e108](https://github.com/willothy/flatten.nvim/commit/ab2e1085c731dd296a56e9670218083726337df6))
+* set buffer when using the `smart` open strategy ([45cd774](https://github.com/willothy/flatten.nvim/commit/45cd7745c024d52ff0711222c20ee1607b228ac0))
+* stop waiting if/when rpc channel is closed ([4607ac0](https://github.com/willothy/flatten.nvim/commit/4607ac09bed5c783877989977e856534a481e09f))
+* trim scheme from file uri ([9e55edc](https://github.com/willothy/flatten.nvim/commit/9e55edc2e2692e9e151de40444926c5ab0bd0ce5))
+* use `0xffffffffffffffff` instead of `math.huge` ([9203fc6](https://github.com/willothy/flatten.nvim/commit/9203fc65134866fc31318b74dc92a12a97028f34))
+* use `rpc.connect()` instead of `guest.sockconnect()` ([754a7fa](https://github.com/willothy/flatten.nvim/commit/754a7fafa8de6dc9dcc0c2fae25abf469efd489a))
+* use default interval for `vim.wait` ([4258a0a](https://github.com/willothy/flatten.nvim/commit/4258a0a21df130c9c148602763bb8800e452d180))
+* use rpc module functions in default hooks ([6a91020](https://github.com/willothy/flatten.nvim/commit/6a910201c3c565c2973006c489de5a49fbc33bb1))
+
+
+### Documentation
+
+* update breaking change notice in readme ([d5d7cef](https://github.com/willothy/flatten.nvim/commit/d5d7cef314218a39d3e444dd5b689d7413fab5a7))
+
+
+### Code Refactoring
+
+* drop support for nvim &lt;= 0.10 ([cc3d8f7](https://github.com/willothy/flatten.nvim/commit/cc3d8f79b27e6619136147b35935111be5a83335))
+* fully typed config and API, use tables for callback ctx ([ffb2979](https://github.com/willothy/flatten.nvim/commit/ffb29792da8800b01c299e56fb00d8c96d5198a6))
+
 ## [0.5.1](https://github.com/willothy/flatten.nvim/compare/v0.5.0...v0.5.1) (2024-01-26)
 
 
