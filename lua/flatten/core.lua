@@ -324,7 +324,11 @@ function M.edit_files(opts)
       if open == "tab" then
         vim.cmd.tabnew()
       end
-      vim.api.nvim_set_current_buf(focus.bufnr)
+      local ok, _ = pcall(vim.api.nvim_set_current_buf, focus.bufnr)
+      if not ok then
+        vim.notify("Warning when setting buffer", vim.log.levels.WARN)
+      end
+
       winnr = vim.api.nvim_get_current_win()
     end
     bufnr = focus.bufnr
