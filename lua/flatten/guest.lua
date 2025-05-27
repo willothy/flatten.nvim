@@ -144,13 +144,10 @@ function M.init(host_pipe)
         :totable()
       nfiles = #files
 
-      local quickfix = vim.iter(vim.api.nvim_list_bufs()):find(function(buf)
-        return vim.bo[buf].filetype == "quickfix"
-      end)
-
+      local quickfix = vim.fn.getqflist()
       -- No arguments, user is probably opening a nested session intentionally
       -- Or only piping input from stdin
-      if nfiles < 1 and not quickfix then
+      if nfiles < 1 and #quickfix == 0 then
         local should_nest, should_block = config.nest_if_no_args, false
 
         if config.hooks.no_files then
@@ -179,7 +176,7 @@ function M.init(host_pipe)
       end
 
       quickfix = vim
-        .iter(vim.fn.getqflist())
+        .iter(quickfix)
         :map(function(old)
           return {
             filename = vim.api.nvim_buf_get_name(old.bufnr),

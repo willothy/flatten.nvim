@@ -212,8 +212,9 @@ function M.edit_files(opts)
     }
   end
 
-  if quickfix then
-    vim.fn.setqflist(quickfix, "r")
+  if quickfix and #quickfix ~= 0 then
+    vim.fn.setqflist(quickfix, " ")
+    return false
   end
 
   ---@type Flatten.WindowId
