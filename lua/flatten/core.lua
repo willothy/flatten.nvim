@@ -52,7 +52,7 @@ end
 
 ---@param argv string[]
 ---@return string[] pre_cmds, string[] post_cmds
-local function parse_argv(argv)
+function M.parse_argv(argv)
   local pre_cmds, post_cmds = {}, {}
   local is_cmd = false
   for _, arg in ipairs(argv) do
@@ -76,7 +76,7 @@ end
 function M.run_commands(opts)
   local argv = opts.argv
 
-  local pre_cmds, post_cmds = parse_argv(argv)
+  local pre_cmds, post_cmds = M.parse_argv(argv)
 
   for _, cmd in ipairs(pre_cmds) do
     vim.api.nvim_exec2(cmd, {})
@@ -152,7 +152,7 @@ function M.edit_files(opts)
   local stdin_lines = #stdin
 
   --- commands passed through with +<cmd>, to be executed after opening files
-  local pre_cmds, post_cmds = parse_argv(argv)
+  local pre_cmds, post_cmds = M.parse_argv(argv)
 
   if
     nfiles == 0
