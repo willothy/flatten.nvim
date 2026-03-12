@@ -184,9 +184,14 @@ function M.edit_files(opts)
         fpath = guest_cwd .. "/" .. fname
       end
 
+      local bufnr = vim.fn.bufadd(fpath)
+      -- Disable swapfile before loading to avoid interactive prompts
+      vim.api.nvim_set_option_value("swapfile", false, { buf = bufnr })
+      vim.fn.bufload(bufnr)
+
       local file = {
         fname = fpath,
-        bufnr = vim.fn.bufadd(fpath),
+        bufnr = bufnr,
       }
 
       vim.api.nvim_set_option_value("buflisted", true, {
