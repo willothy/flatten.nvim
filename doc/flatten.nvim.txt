@@ -1,4 +1,5 @@
-*flatten.nvim.txt*          For NVIM v0.10.0          Last change: 2025 May 27
+*flatten.nvim.txt*
+                                 For NVIM v0.10.0    Last change: 2026 June 19
 
 ==============================================================================
 Table of Contents                             *flatten.nvim-table-of-contents*
@@ -56,7 +57,7 @@ NVIM-NEOROCKS/ROCKS.NVIM (VIA LUAROCKS) ~
     :Rocks install flatten.nvim
 <
 
-Then, in `plugins/flatten.lua`
+Then, in `plugins/flatten.lua`:
 
 >lua
     require("flatten").setup({
@@ -67,7 +68,7 @@ Then, in `plugins/flatten.lua`
 
 USAGE                                                     *flatten.nvim-usage*
 
-Openfiles normally:
+Open files normally:
 
 >bash
     nvim file1 file2
@@ -86,14 +87,14 @@ Open files in diff mode:
     nvim -d file1 file2
 <
 
-Enable blocking for `$VISUAL`
+Enable blocking for `$VISUAL`:
 
 >bash
     # with a custom block handler, you can use `export VISUAL="nvim -b"`
     export VISUAL="nvim --cmd 'let g:flatten_wait=1'" # allows edit-exec <C-x><C-e>
 <
 
-Enablemanpage formatting:
+Enable manpage formatting:
 
 >bash
     export MANPAGER="nvim +Man!"
@@ -155,61 +156,61 @@ Flatten comes with the following defaults:
 
 GENERAL ~
 
-- `block_for``table<string, boolean>`
-    - Defaultincludes `gitcommit` and `gitrebase` only.
+- `block_for`: `table<string, boolean>`:
+    - Default includes `gitcommit` and `gitrebase` only.
     - Add a filetype to always block the guest when opening a file of that type.
-- `nest_if_no_args``boolean` (default: `false`)
+- `nest_if_no_args`: `boolean` (default: `false`)
     - If true, will nest if no arguments are passed to `nvim`.
-- `nest_if_cmds``boolean` (default: `false`)
+- `nest_if_cmds`: `boolean` (default: `false`)
     - If true, will nest with no args even if a command is passed to `nvim`.
-- `disable_cmd_passthrough``boolean` (default: `false`)
+- `disable_cmd_passthrough`: `boolean` (default: `false`)
     - If true, will not pass commands to the host instance.
 
 
 INTEGRATIONS ~
 
-- `integrations.wezterm``boolean` (default: `false`)
+- `integrations.wezterm`: `boolean` (default: `false`)
     - If true, [Wezterm] tabs running in the same working directory will be flattened into the same Neovim instance.
-- `integrations.kitty``boolean` (default: `false`)
+- `integrations.kitty`: `boolean` (default: `false`)
     - If true, [Kitty] tabs will be flattened into the same Neovim instance.
     - Flatten-by-cwd not supported on Kitty yet, PRs welcome.
 
 
 WINDOW ~
 
-- `window.open``"current"` | `"alternate"` | `"split"` | `"vsplit"` | `"tab"` | `"smart"` | `Flatten.OpenHandler`
+- `window.open`: `"current"` | `"alternate"` | `"split"` | `"vsplit"` | `"tab"` | `"smart"` | `Flatten.OpenHandler`
     - The default is `"alternate"`.
-    - `"alternate"`Opens the file in the alternate (`<C-w>p`, |winnr()|) window.
-    - `"current"`Opens the file in the current window.
-    - `"vsplit"`Opens the file in a vertical split.
-    - `"split"`Opens the file in a horizontal split.
-    - `"tab"`Opens the file in a new tabpage.
-    - `"smart"`Automatically chooses between the alternate window, available other windows, and opening a new split.
-    - `Flatten.OpenHandler``fun(opts: Flatten.OpenContext): window, buffer?`
+    - `"alternate"`: Opens the file in the alternate (`<C-w>p`, |winnr()|) window.
+    - `"current"`: Opens the file in the current window.
+    - `"vsplit"`: Opens the file in a vertical split.
+    - `"split"`: Opens the file in a horizontal split.
+    - `"tab"`: Opens the file in a new tabpage.
+    - `"smart"`: Automatically chooses between the alternate window, available other windows, and opening a new split.
+    - `Flatten.OpenHandler`: `fun(opts: Flatten.OpenContext): window, buffer?`
         - A custom function that returns a window number and optionally a buffer.
-- `window.diff``"split"` | `"vsplit"` | `"tab_split"` | `"tab_vsplit"` | `Flatten.OpenHandler`
+- `window.diff`: `"split"` | `"vsplit"` | `"tab_split"` | `"tab_vsplit"` | `Flatten.OpenHandler`
     - The default is `"tab_vsplit"`.
-    - `"split"`Opens the file in a horizontal split.
-    - `"vsplit"`Opens the file in a vertical split.
-    - `"tab_split"`Opens the file in a new tabpage.
-    - `"tab_vsplit"`Opens the file in a new tabpage.
-    - `Flatten.OpenHandler``fun(opts: Flatten.OpenContext): window, buffer?`
+    - `"split"`: Opens the file in a horizontal split.
+    - `"vsplit"`: Opens the file in a vertical split.
+    - `"tab_split"`: Opens the file in a new tabpage.
+    - `"tab_vsplit"`: Opens the file in a new tabpage.
+    - `Flatten.OpenHandler`: `fun(opts: Flatten.OpenContext): window, buffer?`
         - A custom function that returns a window number and optionally a buffer.
-    - `Flatten.OpenContext`
-        - `files``string[]`
+    - `Flatten.OpenContext`:
+        - `files`: `string[]`
             - The list of files passed to the host.
-        - `argv``string[]`
+        - `argv`: `string[]`
             - The full argv list from the _guest_ instance.
-        - `stdin_buf``Flatten.BufInfo?`
+        - `stdin_buf`: `Flatten.BufInfo?`
             - Info about the stdin buffer, if one was created.
-        - `guest_cwd``string`
+        - `guest_cwd`: `string`
             - The current working directory of the guest instance.
-        - `data``any`
+        - `data`: `any`
             - The data passed to the host from the `guest_data` hook.
-    - `Flatten.BufInfo`
-        - `fname``string`
-        - `bufnr``integer`
-- `window.focus``"first"` | `"last"`
+    - `Flatten.BufInfo`:
+        - `fname`: `string`
+        - `bufnr`: `integer`
+- `window.focus`: `"first"` | `"last"`
     - The default is `"first"`.
 
 
@@ -217,47 +218,47 @@ HOOKS ~
 
 Defaults are in `flatten.hooks`.
 
-- `hooks.should_block``fun(argv: string[]): boolean`
+- `hooks.should_block`: `fun(argv: string[]): boolean`
     - Should return `true` if the guest should wait for the host to close the file.
-- `hooks.should_nest``fun(host: channel): boolean`
+- `hooks.should_nest`: `fun(host: channel): boolean`
     - Should return `true` if the guest should _not_ be flattened into the same Neovim instance as the host.
         This is useful for customizing when files should be sent to a host instance and when they should be opened
         in a new one.
-- `hooks.pre_open``fun(opts: Flatten.PreOpenContext)`
+- `hooks.pre_open`: `fun(opts: Flatten.PreOpenContext)`
     - Called before opening files.
-    - `Flatten.PreOpenContext`
-        - `data``any`
+    - `Flatten.PreOpenContext`:
+        - `data`: `any`
             - The data passed to the host from the `guest_data` hook.
-- `hooks.post_open``fun(opts: Flatten.PostOpenContext)`
+- `hooks.post_open`: `fun(opts: Flatten.PostOpenContext)`
     - Called after opening files.
-    - `Flatten.PostOpenContext`
-        - `bufnr``integer`
+    - `Flatten.PostOpenContext`:
+        - `bufnr`: `integer`
             - The buffer number of the file that was opened.
-        - `winnr``integer`
+        - `winnr`: `integer`
             - The window that the file was opened in.
-        - `filetype``string`
+        - `filetype`: `string`
             - The filetype of the file that was opened.
-        - `is_blocking``boolean`
+        - `is_blocking`: `boolean`
             - Whether the guest will be blocked while the host edits.
-        - `is_diff``boolean`
+        - `is_diff`: `boolean`
             - Whether the files were opened in diff mode.
-        - `data``any`
+        - `data`: `any`
             - The data passed to the host from the `guest_data` hook.
-- `hooks.block_end``fun(opts: Flatten.BlockEndContext)`
+- `hooks.block_end`: `fun(opts: Flatten.BlockEndContext)`
     - Called when the host closes the file.
-    - `Flatten.BlockEndContext`
-        - `filetype``string`
+    - `Flatten.BlockEndContext`:
+        - `filetype`: `string`
             - The filetype of the file that was opened.
-        - `data``any`
+        - `data`: `any`
             - The data passed to the host from the `guest_data` hook.
-- `hooks.no_files``fun(opts: Flatten.NoFilesArgs): Flatten.NoFilesBehavior`
+- `hooks.no_files`: `fun(opts: Flatten.NoFilesArgs): Flatten.NoFilesBehavior`
     - Called when no files are passed to a guest instance, to determine what to do.
-    - `Flatten.NoFilesArgs`
-        - `argv``string[]`
-    - `Flatten.NoFilesBehavior``boolean` | `{ nest: boolean, block: boolean }`
-- `hooks.guest_data``fun(): any`
+    - `Flatten.NoFilesArgs`:
+        - `argv`: `string[]`
+    - `Flatten.NoFilesBehavior`: `boolean` | `{ nest: boolean, block: boolean }`
+- `hooks.guest_data`: `fun(): any`
     - Called when the guest sends data to the host, to allow custom data to be passed to the host.
-- `hooks.pipe_path``fun(): string`
+- `hooks.pipe_path`: `fun(): string`
     - Called to determine whether an instance is a host or is a guest and should connect to a host.
 
 
