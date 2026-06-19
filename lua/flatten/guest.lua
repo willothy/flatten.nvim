@@ -38,7 +38,7 @@ local function send_files(files, stdin, quickfix)
 
   local server = vim.fn.fnameescape(vim.v.servername)
   local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1))
-  if jit.os == "Windows" then
+  if vim.fn.has("win32") == 1 then
     server = sanitize(server)
     cwd = sanitize(cwd)
   end
@@ -71,7 +71,7 @@ end
 local function send_commands()
   local server = vim.fn.fnameescape(vim.v.servername)
   local cwd = vim.fn.fnameescape(vim.fn.getcwd(-1, -1))
-  if jit.os == "Windows" then
+  if vim.fn.has("win32") == 1 then
     server = sanitize(server)
     cwd = sanitize(cwd)
   end

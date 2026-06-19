@@ -3,7 +3,7 @@ local M = {}
 local function path_is_absolute(path)
   path = string.gsub(path, "^%s+://", "")
 
-  if jit.os == "Windows" then
+  if vim.fn.has("win32") == 1 then
     return string.find(path, "^%a:") ~= nil
   else
     return string.find(path, "^/") ~= nil
