@@ -199,7 +199,7 @@ local config = {
     - A custom function that returns a window number and optionally a buffer.
 
   - `Flatten.OpenContext`:
-    - `files`: `string[]`
+    - `files`: `Flatten.BufInfo[]`
       - The list of files passed to the host.
     - `argv`: `string[]`
       - The full argv list from the *guest* instance.

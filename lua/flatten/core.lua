@@ -279,7 +279,7 @@ function M.edit_files(opts)
     winnr = winnr or vim.api.nvim_get_current_win()
     bufnr = bufnr or vim.api.nvim_get_current_buf()
   elseif type(open) == "function" then
-    bufnr, winnr = open({
+    winnr, bufnr = open({
       files = files,
       argv = argv,
       stdin_buf = stdin_buf,
