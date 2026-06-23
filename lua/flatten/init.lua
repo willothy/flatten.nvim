@@ -124,7 +124,8 @@ local Flatten = {}
 ---config.nest_if_no_args is respected.
 ---@field should_nest? fun(host: integer):boolean
 ---Called before a nested session is opened.
----@field pre_open? fun(opts: Flatten.PreOpenContext)
+---Retuened config is merged with global config for this file
+---@field pre_open? fun(opts: Flatten.PreOpenContext): Flatten.Config?
 ---Called after a nested session is opened.
 ---@field post_open? fun(opts: Flatten.PostOpenContext)
 ---Called when a nested session is done waiting for the host.

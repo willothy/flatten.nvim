@@ -229,8 +229,9 @@ Defaults are in `flatten.hooks`.
     This is useful for customizing when files should be sent to a host instance and when they should be opened
     in a new one.
 
-- `hooks.pre_open`: `fun(opts: Flatten.PreOpenContext)`
+- `hooks.pre_open`: `fun(opts: Flatten.PreOpenContext): Flatten.Config?`
   - Called before opening files.
+  - Returned config, if any, will be merged with the global config (for this file only).
 
   - `Flatten.PreOpenContext`:
     - `data`: `any`

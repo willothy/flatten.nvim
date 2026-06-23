@@ -71,6 +71,13 @@ function M.parse_argv(argv)
   return pre_cmds, post_cmds
 end
 
+local function mergeConfig(new, default)
+  if new == nil then
+    return default
+  end
+  return vim.tbl_deep_extend("keep", new, default)
+end
+
 ---@param opts { argv: string[], response_pipe: string, guest_cwd: string }
 ---@return boolean
 function M.run_commands(opts)
@@ -142,9 +149,6 @@ function M.edit_files(opts)
   local force_block = opts.force_block
   local argv = opts.argv
   local config = require("flatten").config
-  local hooks = config.hooks
-  local focus_first = config.window.focus == "first"
-  local open = config.window.open
   local data = opts.data
   local quickfix = opts.quickfix
 
@@ -166,9 +170,15 @@ function M.edit_files(opts)
     return false
   end
 
-  hooks.pre_open({
-    data = data,
-  })
+  config = mergeConfig(
+    config.hooks.pre_open({
+      data = data,
+    }),
+    config
+  )
+  local hooks = config.hooks
+  local focus_first = config.window.focus == "first"
+  local open = config.window.open
 
   for _, cmd in ipairs(pre_cmds) do
     vim.api.nvim_exec2(cmd, {})
