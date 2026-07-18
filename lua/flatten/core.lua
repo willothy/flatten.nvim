@@ -1,7 +1,9 @@
 local M = {}
 
 local function path_is_absolute(path)
-  path = string.gsub(path, "^%s+://", "")
+  if string.find(path, "^%a[%w.+-]*://") then
+    return true
+  end
 
   if jit.os == "Windows" then
     return string.find(path, "^%a:") ~= nil
