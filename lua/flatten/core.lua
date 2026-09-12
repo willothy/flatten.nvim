@@ -343,7 +343,7 @@ function M.edit_files(opts)
     return false
   end
 
-  if bufnr then
+  if bufnr and vim.api.nvim_buf_is_valid(bufnr) then
     local ft = vim.bo[bufnr].filetype
 
     local block = config.block_for[ft] ~= nil or force_block
