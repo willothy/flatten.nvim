@@ -361,10 +361,25 @@ function M.edit_files(opts)
       data = data,
     })
 
+    local rex = require("flatten.rex")
+    -- a guest in a different block than this host (not one in its :term)
+    local rex_guest = rex.enabled()
+        and opts.rex_block ~= rex.current_block()
+        and opts.rex_block
+      or nil
+    if rex_guest then
+      rex.focus(rex.current_block())
+    end
+
     if block then
       M.augroup =
         vim.api.nvim_create_augroup("flatten_notify", { clear = true })
-      notify_when_done(response_pipe, bufnr, hooks.block_end, {
+      notify_when_done(response_pipe, bufnr, function(cx)
+        if rex_guest then
+          rex.focus(rex_guest)
+        end
+        hooks.block_end(cx)
+      end, {
         filetype = ft,
         data = data,
       })

@@ -57,6 +57,10 @@ local function send_files(files, stdin, quickfix)
     args.data = config.hooks.guest_data()
   end
 
+  if require("flatten.rex").enabled() then
+    args.rex_block = require("flatten.rex").current_block()
+  end
+
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     vim.api.nvim_buf_delete(buf, { force = true })
   end
