@@ -7,7 +7,7 @@
 </h1>
 
 <p align='center'>
-  <b>Open files and command output from `:term`, <a href="https://github.com/wez/wezterm">Wezterm</a> and <a href="https://github.com/kovidgoyal/kitty">Kitty</a> in your current neovim instance</b>
+  <b>Open files and command output from `:term`, <a href="https://github.com/wez/wezterm">Wezterm</a>, <a href="https://github.com/kovidgoyal/kitty">Kitty</a> and <a href="https://www.superlogical.com/rex">Rex</a> in your current neovim instance</b>
 </p>
 
 <https://github.com/willothy/flatten.nvim/assets/38540736/b4e4e75a-9be2-478d-9098-7e421dd6d1d9>
@@ -31,6 +31,7 @@ Config for demo [here](#advanced-configuration-examples) (autodelete gitcommit o
 - [x] Setting to force blocking from the commandline, regardless of filetype
 - [x] Command passthrough from guest to host
 - [x] Flatten instances from wezterm and kitty tabs/panes based on working directory
+- [x] Flatten instances from Rex blocks in the same session, switching to the host's block and back
 
 ## Installation[^1]
 
@@ -148,6 +149,7 @@ local config = {
   integrations = {
     kitty = false,
     wezterm = false,
+    rex = false,
   },
 }
 ```
@@ -175,6 +177,11 @@ local config = {
 - `integrations.kitty`: `boolean` (default: `false`)
   - If true, [Kitty] tabs will be flattened into the same Neovim instance.
   - Flatten-by-cwd not supported on Kitty yet, PRs welcome.
+
+- `integrations.rex`: `boolean` (default: `false`)
+  - If true, [Rex](https://www.superlogical.com/rex) blocks in the same Rex session and working directory will be flattened into the same Neovim instance.
+  - Opening a file from another block focuses the host's block (`rex block focus`); when a blocking file (e.g. a git commit) is closed, focus returns to the block it was opened from.
+  - Needs the `rex` CLI on `PATH`, which Rex sets up inside its terminals.
 
 ### Window
 

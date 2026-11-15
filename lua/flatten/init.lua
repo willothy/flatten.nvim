@@ -29,6 +29,7 @@ local Flatten = {}
 ---@field quickfix vim.quickfix.entry[]   quickfix list or {}
 ---@field force_block boolean             enable blocking
 ---@field data any?                       arbitrary data passed to the host
+---@field rex_block string?               guest's Rex block, if the rex integration is enabled
 
 ---Specify blocking by filetype
 ---@alias Flatten.BlockFor table<string, boolean>
@@ -79,6 +80,9 @@ local Flatten = {}
 ---@field kitty? boolean
 ---Flatten nested instances in wezterm tabs / panes
 ---@field wezterm? boolean
+---Flatten nested instances in Rex blocks of the same session, focusing the
+---host's block when a file opens and the guest's block when blocking ends
+---@field rex? boolean
 
 ---Passed to hooks that handle opening files
 ---@class Flatten.BufInfo
@@ -161,16 +165,17 @@ function Hooks.should_nest(host)
     return false
   end
 
-  -- if we're not using kitty or wezterm,
+  -- if we're not using kitty, wezterm or rex,
   -- early return and allow the nested session to open
   if
     not Flatten.config.integrations.kitty
     and not Flatten.config.integrations.wezterm
+    and not Flatten.config.integrations.rex
   then
     return true
   end
 
-  -- If in a wezterm or kitty split, only open files in the first neovim instance
+  -- If in a wezterm, kitty or rex split, only open files in the first neovim instance
   -- if their working directories are the same.
   -- This allows you to open a new instance in a different cwd, but open files from the active cwd in your current session.
   local ok, host_cwd = pcall(
@@ -262,6 +267,13 @@ function Hooks.pipe_path()
       return ret
     end
   end
+
+  -- If running in Rex, all blocks in the same Rex session will open in the
+  -- first neovim instance.
+  local ret = require("flatten.rex").pipe_path()
+  if ret ~= nil then
+    return ret
+  end
 end
 
 ---@type Flatten.Config
@@ -279,6 +291,7 @@ Flatten.config = {
   integrations = {
     kitty = false,
     wezterm = false,
+    rex = false,
   },
   allow_cmd_passthrough = true,
   nest_if_no_args = false,
